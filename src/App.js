@@ -1101,6 +1101,15 @@ function App() {
                                     </div>
                                 </div>
                             </div>
+                            <div style={s.softCard}>
+                                <div style={{ display: "flex", gap: 10, alignItems: "start" }}>
+                                    <Landmark size={18} color="#71717a" style={{ marginTop: 3 }} />
+                                    <div>
+                                        <div style={{ fontWeight: 800 }}>Test</div>
+                                        <div style={{ fontSize: 14, color: "#71717a", marginTop: 4 }}>Test.</div>
+                                    </div>
+                                </div>
+                            </div>
                         </div>
                     </div>
                 )}
