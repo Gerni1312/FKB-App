@@ -2,7 +2,6 @@ import React, { useEffect, useMemo, useRef, useState } from "react";
 import {
   Plus,
   Wallet,
-  PiggyBank,
   Target,
   Settings,
   Trash2,
