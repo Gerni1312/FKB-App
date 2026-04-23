@@ -10,7 +10,6 @@ import {
   TrendingDown,
   CalendarDays,
   Search,
-  Filter,
   BarChart3,
   Home,
   CreditCard,
