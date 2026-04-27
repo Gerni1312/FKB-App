@@ -37,6 +37,21 @@ import {
   CartesianGrid,
 } from "recharts";
 
+
+const categories = [
+    "Essen",
+    "Freizeit",
+    "Abos",
+    "Transport",
+    "Shopping",
+    "Fixkosten",
+    "Handy",
+    "Gaming",
+    "Sparen",
+    "Sonstiges",
+];
+
+
 const STORAGE_KEY = "sigma-finance-app-cra-v2";
 const chartColors = ["#22c55e", "#f59e0b", "#ef4444", "#0ea5e9", "#8b5cf6", "#14b8a6"];
 
@@ -635,9 +650,11 @@ function App() {
   });
 
   const mobileOnly = typeof window !== "undefined" && window.innerWidth < 640;
-  const appVersion = "v2.2 – Demo-Button entfernt";
+  const appVersion = "v2.3 – Neuer Titel | Budget Überarbeitung ";
   const appUpdateNotes = [
-    "Demo-Button wurde entfernt, damit nicht ausversehen alle Daten zurückgesetzt werden",
+      "Neuer Titel zur FKB wurde hinzugefügt.",
+      "Zusätzlich wurde ein vielversprechender Slogan ergänzt.",
+      "In der Budget-Kategorie wurden die wiederkehrenden Ausgaben überarbeitet:\n- Kategorien sind jetzt in einem Dropdown-Menü auswählbar\n- Es ist ein Zeitpunkt wählbar, an welchem die Zahlung ausgeführt wird",
   ];
 
   return (
@@ -647,8 +664,8 @@ function App() {
           <div style={{ display: "flex", justifyContent: "space-between", gap: 16, flexWrap: "wrap", alignItems: "center" }}>
             <div>
               <div style={{ display: "flex", gap: 8, flexWrap: "wrap", alignItems: "center" }}>
-                <div style={{ fontSize: 12, letterSpacing: 3, textTransform: "uppercase", opacity: 0.65 }}>Sigma Finance</div>
-                <span style={{ ...s.badge, background: "rgba(255,255,255,0.1)", border: "1px solid rgba(255,255,255,0.12)", color: "white" }}>CRA Version</span>
+                <div style={{ fontSize: 12, letterSpacing: 3, textTransform: "uppercase", opacity: 0.65 }}>Fynn Kantonal Bank</div>
+                              <span style={{ ...s.badge, background: "rgba(255,255,255,0.1)", border: "1px solid rgba(255,255,255,0.12)", color: "white" }}>A bank free of Jews</span>
               </div>
               <div style={{ fontSize: 38, fontWeight: 900, marginTop: 10, lineHeight: 1.05 }}>Dein Geld. Endlich unter Kontrolle.</div>
               <div style={{ marginTop: 10, maxWidth: 760, color: "rgba(255,255,255,0.78)", fontSize: 15 }}>
@@ -845,8 +862,33 @@ function App() {
               <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(180px,1fr))", gap: 12 }}>
                 <input style={s.input} placeholder="Titel" value={newRecurring.title} onChange={(e) => setNewRecurring((p) => ({ ...p, title: e.target.value }))} />
                 <input style={s.input} type="number" placeholder="Betrag" value={newRecurring.amount} onChange={(e) => setNewRecurring((p) => ({ ...p, amount: e.target.value }))} />
-                <input style={s.input} placeholder="Kategorie" value={newRecurring.category} onChange={(e) => setNewRecurring((p) => ({ ...p, category: e.target.value }))} />
-                <input style={s.input} type="number" placeholder="Tag im Monat" value={newRecurring.dayOfMonth} onChange={(e) => setNewRecurring((p) => ({ ...p, dayOfMonth: e.target.value }))} />
+                <select
+                    style={s.input}
+                    value={newRecurring.category}
+                    onChange={(e) =>
+                        setNewRecurring((p) => ({ ...p, category: e.target.value }))
+                    }
+                >
+                    <option value="">Kategorie wählen</option>
+                    {categories.map((cat) => (
+                        <option key={cat} value={cat}>
+                            {cat}
+                        </option>
+                    ))}
+                </select>
+
+                <select
+                    style={s.input}
+                    value={newRecurring.dayOfMonth}
+                    onChange={(e) =>
+                        setNewRecurring((p) => ({ ...p, dayOfMonth: e.target.value }))
+                    }
+                >
+                    <option value="1">Monatlich am 1.</option>
+                    <option value="2">Monatlich am 2.</option>
+                    <option value="15">Monatlich am 15.</option>
+                    <option value="25">Monatlich am 25.</option>
+                </select>
                 <button style={s.button} onClick={addRecurring}>Hinzufügen</button>
               </div>
 
