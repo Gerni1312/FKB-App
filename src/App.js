@@ -14,7 +14,6 @@ import {
   CreditCard,
   Download,
   Upload,
-  RefreshCw,
   Trophy,
   Smartphone,
   Landmark,
