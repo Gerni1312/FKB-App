@@ -628,18 +628,6 @@ function App() {
     event.target.value = "";
   }
 
-  function resetToDemo() {
-    setTransactions(seedData.transactions);
-    setBudgets(seedData.budgets);
-    setRecurring(seedData.recurring);
-    setGoals(seedData.goals);
-    setMainAccount(seedData.mainAccount);
-    setSavingsAccount(seedData.savingsAccount);
-    setCurrency(seedData.settings.currency);
-    setWeeklyMode(seedData.settings.weeklyMode);
-    setMonthOffset(seedData.settings.monthOffset);
-    setTab("dashboard");
-  }
 
   const tabButtonStyle = (active) => ({
     ...s.tabButton,
@@ -648,12 +636,9 @@ function App() {
   });
 
   const mobileOnly = typeof window !== "undefined" && window.innerWidth < 640;
-  const appVersion = "v2.1 – Mobile Polish";
+  const appVersion = "v2.2 – Demo-Button entfernt";
   const appUpdateNotes = [
-    "Hauptkonto und Sparkonto sauber getrennt",
-    "Sparkonto-Ausleihen besser integriert",
-    "Mobile Layout bei mehreren Bereichen verbessert",
-    "Update-Bereich in den Einstellungen hinzugefügt",
+    "Demo-Button wurde entfernt, damit nicht ausversehen alle Daten zurückgesetzt werden",
   ];
 
   return (
@@ -689,7 +674,6 @@ function App() {
           <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
             <button style={s.buttonSecondary} onClick={exportData}><Download size={16} /> Export</button>
             <button style={s.buttonSecondary} onClick={() => fileInputRef.current?.click()}><Upload size={16} /> Import</button>
-            <button style={s.buttonSecondary} onClick={resetToDemo}><RefreshCw size={16} /> Demo</button>
             <input ref={fileInputRef} type="file" accept="application/json" style={{ display: "none" }} onChange={handleImport} />
           </div>
         </div>
