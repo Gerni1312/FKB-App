@@ -878,16 +878,17 @@ function App() {
                 </select>
 
                 <select
-                    style={s.input}
-                    value={newRecurring.dayOfMonth}
-                    onChange={(e) =>
-                        setNewRecurring((p) => ({ ...p, dayOfMonth: e.target.value }))
-                    }
+                  style={s.input}
+                  value={newRecurring.dayOfMonth}
+                  onChange={(e) =>
+                    setNewRecurring((p) => ({ ...p, dayOfMonth: Number(e.target.value) }))
+                  }
                 >
-                    <option value="1">Monatlich am 1.</option>
-                    <option value="2">Monatlich am 2.</option>
-                    <option value="15">Monatlich am 15.</option>
-                    <option value="25">Monatlich am 25.</option>
+                  {Array.from({ length: 31 }, (_, i) => i + 1).map((day) => (
+                    <option key={day} value={day}>
+                      Monatlich am {day}.
+                    </option>
+                  ))}
                 </select>
                 <button style={s.button} onClick={addRecurring}>Hinzufügen</button>
               </div>
