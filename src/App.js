@@ -674,7 +674,12 @@ function saveEditRecurring(id) {
   setEditingRecurringId(null);
 }
 
-
+function toggleVersion(version) {
+  setOpenVersions((prev) => ({
+    ...prev,
+    [version]: !prev[version],
+  }));
+}
 
 
 
