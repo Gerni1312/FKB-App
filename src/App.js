@@ -15,8 +15,6 @@ import {
   Download,
   Upload,
   Trophy,
-  Smartphone,
-  Landmark,
   ArrowRightLeft,
   ChevronLeft,
   ChevronRight,
@@ -55,6 +53,57 @@ const categories = [
 
 const STORAGE_KEY = "sigma-finance-app-cra-v2";
 const chartColors = ["#22c55e", "#f59e0b", "#ef4444", "#0ea5e9", "#8b5cf6", "#14b8a6"];
+
+
+
+// VERSION
+  const mobileOnly = typeof window !== "undefined" && window.innerWidth < 640;
+  const versionHistory = [
+    {
+      version: "v2.4",
+      name: "Fixkosten Bearbeitung",
+      date: "2026-04-29",
+      notes: [
+        {
+          title: "Wiederkehrende Ausgaben",
+          items: [
+            "Bereits erstellte Fixkosten können jetzt bearbeitet werden.",
+            "Betrag, Kategorie und Zahlungstag können angepasst werden.",
+          ],
+        },
+        {
+          title: "Navigation",
+          items: [
+            "Demo-Button wurde entfernt.",
+            "App ist dadurch sicherer gegen versehentliches Zurücksetzen.",
+          ],
+        },
+      ],
+    },
+    {
+      version: "v2.3",
+      name: "Neuer Titel | Budget Überarbeitung",
+      date: "2026-04-28",
+      notes: [
+        {
+          title: "Design",
+          items: [
+            "Neuer Titel zur FKB wurde hinzugefügt.",
+            "Zusätzlich wurde ein vielversprechender Slogan ergänzt.",
+          ],
+        },
+        {
+          title: "Budget Überarbeitung",
+          items: [
+            "Kategorien sind jetzt in einem Dropdown-Menü auswählbar.",
+            "Es ist ein Zeitpunkt wählbar, an welchem die Zahlung ausgeführt wird.",
+          ],
+        },
+      ],
+    },
+  ];
+
+
 
 const seedData = {
   transactions: [
@@ -688,59 +737,6 @@ function toggleVersion(version) {
     background: active ? "#18181b" : "transparent",
     color: active ? "white" : "#18181b",
   });
-
-
-
-
-// VERSION
-  const mobileOnly = typeof window !== "undefined" && window.innerWidth < 640;
-const versionHistory = [
-  {
-    version: "v2.4",
-    name: "Fixkosten Bearbeitung",
-    date: "2026-04-29",
-    notes: [
-      {
-        title: "Wiederkehrende Ausgaben",
-        items: [
-          "Bereits erstellte Fixkosten können jetzt bearbeitet werden.",
-          "Betrag, Kategorie und Zahlungstag können angepasst werden.",
-        ],
-      },
-      {
-        title: "Navigation",
-        items: [
-          "Demo-Button wurde entfernt.",
-          "App ist dadurch sicherer gegen versehentliches Zurücksetzen.",
-        ],
-      },
-    ],
-  },
-  {
-    version: "v2.3",
-    name: "Neuer Titel | Budget Überarbeitung",
-    date: "2026-04-28",
-    notes: [
-      {
-        title: "Design",
-        items: [
-          "Neuer Titel zur FKB wurde hinzugefügt.",
-          "Zusätzlich wurde ein vielversprechender Slogan ergänzt.",
-        ],
-      },
-      {
-        title: "Budget Überarbeitung",
-        items: [
-          "Kategorien sind jetzt in einem Dropdown-Menü auswählbar.",
-          "Es ist ein Zeitpunkt wählbar, an welchem die Zahlung ausgeführt wird.",
-        ],
-      },
-    ],
-  },
-];
-
-
-
 
 
 
