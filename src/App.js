@@ -52,6 +52,15 @@ const categories = [
 ];
 
 
+const [editingRecurringId, setEditingRecurringId] = useState(null);
+const [editRecurring, setEditRecurring] = useState({
+  title: "",
+  amount: "",
+  category: "",
+  dayOfMonth: 1,
+});
+
+
 const STORAGE_KEY = "sigma-finance-app-cra-v2";
 const chartColors = ["#22c55e", "#f59e0b", "#ef4444", "#0ea5e9", "#8b5cf6", "#14b8a6"];
 
@@ -643,6 +652,26 @@ function App() {
   }
 
 
+function startEditRecurring(item) {
+  setEditingRecurringId(item.id);
+  setEditRecurring({ ...item });
+}
+
+function cancelEditRecurring() {
+  setEditingRecurringId(null);
+}
+
+function saveEditRecurring(id) {
+  setRecurring((prev) =>
+    prev.map((r) =>
+      r.id === id ? { ...r, ...editRecurring } : r
+    )
+  );
+  setEditingRecurringId(null);
+}
+
+
+
   const tabButtonStyle = (active) => ({
     ...s.tabButton,
     background: active ? "#18181b" : "transparent",
@@ -896,6 +925,33 @@ function App() {
               <div style={{ display: "grid", gap: 12, marginTop: 16 }}>
                 {recurring.map((r) => (
                   <div key={r.id} style={s.softCard}>
+                    {editingRecurringId === r.id ? (
+                      <>
+                        <input
+                          style={s.input}
+                          value={editRecurring.title}
+                          onChange={(e) =>
+                            setEditRecurring((p) => ({ ...p, title: e.target.value }))
+                          }
+                        />
+                        <input
+                          style={s.input}
+                          type="number"
+                          value={editRecurring.amount}
+                          onChange={(e) =>
+                            setEditRecurring((p) => ({ ...p, amount: e.target.value }))
+                          }
+                        />
+
+                        <button onClick={() => saveEditRecurring(r.id)}>Speichern</button>
+                        <button onClick={cancelEditRecurring}>Abbrechen</button>
+                      </>
+                    ) : (
+                      <>
+                        <div>{r.title}</div>
+                        <div>{money(r.amount, currency)} · {r.category} · Tag {r.dayOfMonth}</div>
+                      </>
+                    )}
                     <div style={{ display: "flex", justifyContent: "space-between", gap: 12, flexWrap: "wrap", alignItems: "center" }}>
                       <div>
                         <div style={{ fontWeight: 800 }}>{r.title}</div>
@@ -903,6 +959,7 @@ function App() {
                       </div>
                       <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
                         <span style={s.badge}>{r.active ? "Aktiv" : "Pausiert"}</span>
+                        <button style={s.buttonSecondary} onClick={() => startEditRecurring(r)}>Bearbeiten</button>
                         <button style={s.buttonSecondary} onClick={() => toggleRecurring(r.id)}>{r.active ? "Pausieren" : "Aktivieren"}</button>
                         <button style={{ ...s.buttonSecondary, width: 44, padding: 0 }} onClick={() => deleteRecurring(r.id)}><Trash2 size={16} /></button>
                       </div>
