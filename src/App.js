@@ -397,6 +397,9 @@ const [editRecurring, setEditRecurring] = useState({
   dayOfMonth: 1,
 });
 
+const [openVersions, setOpenVersions] = useState({
+  [versionHistory[0].version]: true,
+});
 
   useEffect(() => {
     try {
@@ -673,6 +676,8 @@ function saveEditRecurring(id) {
 
 
 
+
+
   const tabButtonStyle = (active) => ({
     ...s.tabButton,
     background: active ? "#18181b" : "transparent",
@@ -680,17 +685,60 @@ function saveEditRecurring(id) {
   });
 
 
+
+
 // VERSION
   const mobileOnly = typeof window !== "undefined" && window.innerWidth < 640;
-  const appVersion = "v2.3 – Neuer Titel | Budget Überarbeitung ";
-  // UPDATE NOTES
-  const appUpdateNotes = [
-      "Neuer Titel zur FKB wurde hinzugefügt.",
-      "Zusätzlich wurde ein vielversprechender Slogan ergänzt.",
-      "Budget Überarbeitung",
-      "Kategorien sind jetzt in einem Dropdown-Menü auswählbar",
-      "Es ist ein Zeitpunkt wählbar, an welchem die Zahlung ausgeführt wird",
+const versionHistory = [
+  {
+    version: "v2.4",
+    name: "Fixkosten Bearbeitung",
+    date: "2026-04-29",
+    notes: [
+      {
+        title: "Wiederkehrende Ausgaben",
+        items: [
+          "Bereits erstellte Fixkosten können jetzt bearbeitet werden.",
+          "Betrag, Kategorie und Zahlungstag können angepasst werden.",
+        ],
+      },
+      {
+        title: "Navigation",
+        items: [
+          "Demo-Button wurde entfernt.",
+          "App ist dadurch sicherer gegen versehentliches Zurücksetzen.",
+        ],
+      },
+    ],
+  },
+  {
+    version: "v2.3",
+    name: "Neuer Titel | Budget Überarbeitung",
+    date: "2026-04-28",
+    notes: [
+      {
+        title: "Design",
+        items: [
+          "Neuer Titel zur FKB wurde hinzugefügt.",
+          "Zusätzlich wurde ein vielversprechender Slogan ergänzt.",
+        ],
+      },
+      {
+        title: "Budget Überarbeitung",
+        items: [
+          "Kategorien sind jetzt in einem Dropdown-Menü auswählbar.",
+          "Es ist ein Zeitpunkt wählbar, an welchem die Zahlung ausgeführt wird.",
+        ],
+      },
+    ],
+  },
 ];
+
+
+
+
+
+
 
   return (
     <div style={s.app}>
@@ -1192,58 +1240,60 @@ function saveEditRecurring(id) {
         )}
 
         {tab === "settings" && (
-          <div style={{ ...s.card, padding: 18 }}>
-            <SectionTitle title="Einstellungen" description="Mehr Kontrolle und besseres Verhalten auf dem Handy" />
-            <div style={{ ...s.softCard, marginBottom: 16, background: "#eff6ff", borderColor: "#bfdbfe" }}>
-              <div style={{ display: "flex", justifyContent: "space-between", gap: 12, flexWrap: "wrap", alignItems: "center" }}>
-                <div>
-                  <div style={{ fontWeight: 800 }}>Version</div>
-                  <div style={{ fontSize: 14, color: "#52525b", marginTop: 4 }}>{appVersion}</div>
-                </div>
-                <span style={s.badge}>Letztes Update</span>
-              </div>
-              <div style={{ marginTop: 12 }}>
-                {appUpdateNotes.map((note) => (
-                  <div key={note} style={{ fontSize: 14, color: "#52525b", marginTop: 6 }}>• {note}</div>
-                ))}
-              </div>
+          <div style={{ ...s.softCard, marginBottom: 16, background: "#eff6ff", borderColor: "#bfdbfe" }}>
+            <div style={{ fontWeight: 900, fontSize: 18 }}>Version History</div>
+            <div style={{ fontSize: 14, color: "#52525b", marginTop: 4 }}>
+              Alle Updates der App auf einen Blick
             </div>
-            <div style={{ display: "grid", gridTemplateColumns: mobileOnly ? "1fr" : "repeat(auto-fit, minmax(250px,1fr))", gap: 16, minWidth: 0 }}>
-              <div style={s.softCard}>
-                <div style={{ fontSize: 14, color: "#71717a", marginBottom: 6 }}>Währung</div>
-                <select style={s.input} value={currency} onChange={(e) => setCurrency(e.target.value)}>
-                  <option value="CHF">CHF</option>
-                  <option value="EUR">EUR</option>
-                  <option value="USD">USD</option>
-                </select>
-              </div>
-              <div style={s.softCard}>
-                <div style={{ display: "flex", justifyContent: "space-between", gap: 12, alignItems: "center" }}>
-                  <div>
-                    <div style={{ fontWeight: 800 }}>Wochenbudget-Modus</div>
-                    <div style={{ fontSize: 14, color: "#71717a", marginTop: 4 }}>Zeigt lieber pro Woche statt pro Tag</div>
-                  </div>
-                  <input type="checkbox" checked={weeklyMode} onChange={(e) => setWeeklyMode(e.target.checked)} />
+
+            <div style={{ display: "grid", gap: 10, marginTop: 14 }}>
+              {versionHistory.map((entry, index) => (
+                <div
+                  key={entry.version}
+                  style={{
+                    background: "white",
+                    border: "1px solid #dbeafe",
+                    borderRadius: 16,
+                    padding: 14,
+                  }}
+                >
+                  <button
+                    style={{
+                      ...s.buttonSecondary,
+                      width: "100%",
+                      justifyContent: "space-between",
+                    }}
+                    onClick={() => toggleVersion(entry.version)}
+                  >
+                    <span>
+                      {entry.version} – {entry.name}
+                    </span>
+                    <span>{openVersions[entry.version] ? "▲" : "▼"}</span>
+                  </button>
+
+                  {openVersions[entry.version] && (
+                    <div style={{ marginTop: 12 }}>
+                      <div style={{ fontSize: 13, color: "#71717a", marginBottom: 8 }}>
+                        {entry.date}
+                        {index === 0 ? " · Neustes Update" : ""}
+                      </div>
+
+                      {entry.notes.map((note) => (
+                        <div key={note.title} style={{ marginTop: 8 }}>
+                          <div style={{ fontWeight: 800 }}>● {note.title}</div>
+                          <div style={{ marginLeft: 20, marginTop: 4 }}>
+                            {note.items.map((item) => (
+                              <div key={item} style={{ fontSize: 14, color: "#52525b", marginTop: 3 }}>
+                                - {item}
+                              </div>
+                            ))}
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  )}
                 </div>
-              </div>
-              <div style={s.softCard}>
-                <div style={{ display: "flex", gap: 10, alignItems: "start" }}>
-                  <Smartphone size={18} color="#71717a" style={{ marginTop: 3 }} />
-                  <div>
-                    <div style={{ fontWeight: 800 }}>Handy-Layout verbessert</div>
-                    <div style={{ fontSize: 14, color: "#71717a", marginTop: 4 }}>Mehr gestapelte Karten, grössere Touch-Flächen und eine fixe Bottom-Navigation auf kleinen Displays.</div>
-                  </div>
-                </div>
-              </div>
-              <div style={s.softCard}>
-                <div style={{ display: "flex", gap: 10, alignItems: "start" }}>
-                  <Landmark size={18} color="#71717a" style={{ marginTop: 3 }} />
-                  <div>
-                    <div style={{ fontWeight: 800 }}>Konten sauber getrennt</div>
-                    <div style={{ fontSize: 14, color: "#71717a", marginTop: 4 }}>Hauptkonto und Sparkonto können jetzt unabhängig gesetzt und sauber verschoben werden.</div>
-                  </div>
-                </div>
-              </div>
+              ))}
             </div>
           </div>
         )}
