@@ -685,37 +685,11 @@ function saveEditRecurring(id) {
   const appVersion = "v2.3 – Neuer Titel | Budget Überarbeitung ";
   // UPDATE NOTES
   const appUpdateNotes = [
-  {
-    title: "Neuer Titel & Slogan",
-    items: [
       "Neuer Titel zur FKB wurde hinzugefügt.",
       "Zusätzlich wurde ein vielversprechender Slogan ergänzt.",
-
-      // ➕ Neue Punkte hier hinzufügen:
-      // "Weitere Verbesserung hier eintragen",
-    ],
-  },
-
-  {
-    title: "Budget Überarbeitung",
-    items: [
+      "Budget Überarbeitung",
       "Kategorien sind jetzt in einem Dropdown-Menü auswählbar",
       "Es ist ein Zeitpunkt wählbar, an welchem die Zahlung ausgeführt wird",
-
-      // ➕ Weitere Unterpunkte:
-      // "Noch ein Feature hinzufügen",
-    ],
-  },
-
-  // ➕ Neue Hauptkategorie hinzufügen:
-  // {
-  //   title: "Neue Kategorie",
-  //   items: [
-  //     "Punkt 1",
-  //     "Punkt 2",
-  //   ],
-  // },
-
 ];
 
   return (
