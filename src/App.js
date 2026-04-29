@@ -52,14 +52,6 @@ const categories = [
 ];
 
 
-const [editingRecurringId, setEditingRecurringId] = useState(null);
-const [editRecurring, setEditRecurring] = useState({
-  title: "",
-  amount: "",
-  category: "",
-  dayOfMonth: 1,
-});
-
 
 const STORAGE_KEY = "sigma-finance-app-cra-v2";
 const chartColors = ["#22c55e", "#f59e0b", "#ef4444", "#0ea5e9", "#8b5cf6", "#14b8a6"];
@@ -397,6 +389,15 @@ function App() {
   const selectedMonthKey = useMemo(() => getMonthKey(selectedMonthDate), [selectedMonthDate]);
   const selectedMonthLabel = useMemo(() => new Intl.DateTimeFormat("de-CH", { month: "long", year: "numeric" }).format(selectedMonthDate), [selectedMonthDate]);
 
+const [editingRecurringId, setEditingRecurringId] = useState(null);
+const [editRecurring, setEditRecurring] = useState({
+  title: "",
+  amount: "",
+  category: "",
+  dayOfMonth: 1,
+});
+
+
   useEffect(() => {
     try {
       const raw = localStorage.getItem(STORAGE_KEY);
@@ -678,13 +679,44 @@ function saveEditRecurring(id) {
     color: active ? "white" : "#18181b",
   });
 
+
+// VERSION
   const mobileOnly = typeof window !== "undefined" && window.innerWidth < 640;
   const appVersion = "v2.3 – Neuer Titel | Budget Überarbeitung ";
+  // UPDATE NOTES
   const appUpdateNotes = [
+  {
+    title: "Neuer Titel & Slogan",
+    items: [
       "Neuer Titel zur FKB wurde hinzugefügt.",
       "Zusätzlich wurde ein vielversprechender Slogan ergänzt.",
-      "In der Budget-Kategorie wurden die wiederkehrenden Ausgaben überarbeitet:\n- Kategorien sind jetzt in einem Dropdown-Menü auswählbar\n- Es ist ein Zeitpunkt wählbar, an welchem die Zahlung ausgeführt wird",
-  ];
+
+      // ➕ Neue Punkte hier hinzufügen:
+      // "Weitere Verbesserung hier eintragen",
+    ],
+  },
+
+  {
+    title: "Budget Überarbeitung",
+    items: [
+      "Kategorien sind jetzt in einem Dropdown-Menü auswählbar",
+      "Es ist ein Zeitpunkt wählbar, an welchem die Zahlung ausgeführt wird",
+
+      // ➕ Weitere Unterpunkte:
+      // "Noch ein Feature hinzufügen",
+    ],
+  },
+
+  // ➕ Neue Hauptkategorie hinzufügen:
+  // {
+  //   title: "Neue Kategorie",
+  //   items: [
+  //     "Punkt 1",
+  //     "Punkt 2",
+  //   ],
+  // },
+
+];
 
   return (
     <div style={s.app}>
