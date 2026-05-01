@@ -229,7 +229,7 @@ const seedData = {
   ],
   mainAccount: { balance: 220 },
   savingsAccount: { balance: 400, plannedMonthlyDeposit: 150, borrowedOut: 80, expectedInterest: 2 },
-  settings: { currency: "CHF", weeklyMode: true, monthOffset: 0 },
+  settings: { currency: "CHF", weeklyMode: true, monthOffset: 0, payday: 25 },
 };
 
 function money(value, currency = "CHF") {
@@ -249,15 +249,30 @@ function getShiftedMonthDate(offset = 0) {
   return new Date(now.getFullYear(), now.getMonth() + offset, 1);
 }
 
-function getMonthBounds(offset = 0) {
-  const start = getShiftedMonthDate(offset);
-  const end = new Date(start.getFullYear(), start.getMonth() + 1, 0, 23, 59, 59, 999);
+function getMonthBounds(offset = 0, payday = 1) {
+  const now = new Date();
+  const base = new Date(now.getFullYear(), now.getMonth() + offset, 1);
+
+  let start = new Date(base.getFullYear(), base.getMonth(), payday);
+  const todayLike = new Date(now.getFullYear(), now.getMonth(), payday);
+
+  if (offset === 0 && now < todayLike) {
+    start = new Date(base.getFullYear(), base.getMonth() - 1, payday);
+  }
+
+  if (offset !== 0) {
+    start = new Date(base.getFullYear(), base.getMonth(), payday);
+  }
+
+  const end = new Date(start.getFullYear(), start.getMonth() + 1, payday);
+  end.setMilliseconds(end.getMilliseconds() - 1);
+
   return { start, end };
 }
 
-function inSelectedMonth(dateString, offset) {
+function inSelectedMonth(dateString, offset, payday = 1) {
   const date = new Date(dateString);
-  const { start, end } = getMonthBounds(offset);
+  const { start, end } = getMonthBounds(offset, payday);
   return date >= start && date <= end;
 }
 
@@ -269,10 +284,18 @@ function getRecurringDateForMonth(monthDate, dayOfMonth) {
   return new Date(monthDate.getFullYear(), monthDate.getMonth(), clampDay(dayOfMonth)).toISOString().slice(0, 10);
 }
 
-function getBudgetSpentForRange(transactions, budget, monthOffset) {
-  const base = transactions.filter((t) => t.type === "expense" && t.category.toLowerCase() === budget.name.toLowerCase());
-  if (budget.resetMode === "manual") return base.reduce((sum, t) => sum + Number(t.amount), 0);
-  return base.filter((t) => inSelectedMonth(t.date, monthOffset)).reduce((sum, t) => sum + Number(t.amount), 0);
+function getBudgetSpentForRange(transactions, budget, monthOffset, payday) {
+  const base = transactions.filter(
+    (t) => t.type === "expense" && t.category.toLowerCase() === budget.name.toLowerCase()
+  );
+
+  if (budget.resetMode === "manual") {
+    return base.reduce((sum, t) => sum + Number(t.amount), 0);
+  }
+
+  return base
+    .filter((t) => inSelectedMonth(t.date, monthOffset, payday))
+    .reduce((sum, t) => sum + Number(t.amount), 0);
 }
 
 function getGoalProgress(goal) {
@@ -537,6 +560,19 @@ function App() {
   const selectedMonthKey = useMemo(() => getMonthKey(selectedMonthDate), [selectedMonthDate]);
   const selectedMonthLabel = useMemo(() => new Intl.DateTimeFormat("de-CH", { month: "long", year: "numeric" }).format(selectedMonthDate), [selectedMonthDate]);
 
+const selectedPeriodLabel = useMemo(() => {
+  const { start, end } = getMonthBounds(monthOffset, payday);
+
+  const format = (date) =>
+    new Intl.DateTimeFormat("de-CH", {
+      day: "2-digit",
+      month: "2-digit",
+      year: "numeric",
+    }).format(date);
+
+  return `${format(start)} – ${format(end)}`;
+}, [monthOffset, payday]);
+
 const [editingRecurringId, setEditingRecurringId] = useState(null);
 const [editRecurring, setEditRecurring] = useState({
   title: "",
@@ -544,6 +580,8 @@ const [editRecurring, setEditRecurring] = useState({
   category: "",
   dayOfMonth: 1,
 });
+
+const [payday, setPayday] = useState(seedData.settings.payday);
 
 const [openVersions, setOpenVersions] = useState({
   [versionHistory[0].version]: true,
@@ -563,6 +601,7 @@ const [openVersions, setOpenVersions] = useState({
       if (parsed.settings?.currency) setCurrency(parsed.settings.currency);
       if (typeof parsed.settings?.weeklyMode === "boolean") setWeeklyMode(parsed.settings.weeklyMode);
       if (typeof parsed.settings?.monthOffset === "number") setMonthOffset(parsed.settings.monthOffset);
+      if (typeof parsed.settings?.payday === "number") setPayday(parsed.settings.payday);
     } catch (error) {
       console.error(error);
     }
@@ -576,9 +615,9 @@ const [openVersions, setOpenVersions] = useState({
       goals,
       mainAccount,
       savingsAccount,
-      settings: { currency, weeklyMode, monthOffset },
+      settings: { currency, weeklyMode, monthOffset, payday },
     }));
-  }, [transactions, budgets, recurring, goals, mainAccount, savingsAccount, currency, weeklyMode, monthOffset]);
+  }, [transactions, budgets, recurring, goals, mainAccount, savingsAccount, currency, weeklyMode, monthOffset, payday]);
 
   useEffect(() => {
     const recurringToApply = recurring.filter((r) => r.active && r.lastAppliedMonth !== selectedMonthKey);
@@ -599,7 +638,10 @@ const [openVersions, setOpenVersions] = useState({
     setRecurring(updatedRecurring);
   }, [selectedMonthKey, selectedMonthDate, recurring, transactions]);
 
-  const monthTransactions = useMemo(() => transactions.filter((t) => inSelectedMonth(t.date, monthOffset)), [transactions, monthOffset]);
+  const monthTransactions = useMemo(
+    () => transactions.filter((t) => inSelectedMonth(t.date, monthOffset, payday)),
+    [transactions, monthOffset, payday]
+  );
 
   const totals = useMemo(() => {
     const income = monthTransactions.filter((t) => t.type === "income").reduce((sum, t) => sum + Number(t.amount), 0);
@@ -619,10 +661,10 @@ const [openVersions, setOpenVersions] = useState({
   }, [monthTransactions]);
 
   const budgetsWithSpent = useMemo(() => budgets.map((b) => {
-    const spent = getBudgetSpentForRange(transactions, b, monthOffset);
+    const spent = getBudgetSpentForRange(transactions, b, monthOffset, payday);
     const progress = b.limit > 0 ? Math.min((spent / b.limit) * 100, 100) : 0;
     return { ...b, spent, remaining: b.limit - spent, progress, status: getBudgetStatus(progress) };
-  }), [budgets, transactions, monthOffset]);
+  }), [budgets, transactions, monthOffset, payday]);
 
   const dangerBudgets = useMemo(() => budgetsWithSpent.filter((b) => b.progress >= 75), [budgetsWithSpent]);
 
@@ -869,6 +911,9 @@ function toggleVersion(version) {
           <div>
             <div style={{ color: "#71717a", fontSize: 14 }}>Aktiver Monat</div>
             <div style={{ fontSize: 28, fontWeight: 900, textTransform: "capitalize" }}>{selectedMonthLabel}</div>
+            <div style={{ color: "#71717a", fontSize: 14, marginTop: 4 }}>
+              Zeitraum: {selectedPeriodLabel}
+            </div>
           </div>
           <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
             <button style={s.buttonSecondary} onClick={exportData}><Download size={16} /> Export</button>
