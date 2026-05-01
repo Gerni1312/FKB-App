@@ -61,6 +61,20 @@ const chartColors = ["#22c55e", "#f59e0b", "#ef4444", "#0ea5e9", "#8b5cf6", "#14
   const versionHistory = [
     {
       version: "v2.4",
+      name: "Versions-Übersicht",
+      date: "2026-05-01",
+      notes: [
+        {
+          title: "Versionen",
+          items: [
+            "Alle Updates sind einsehbar, damit man einsehen kann, was bei welchem Update gemacht wurde.",
+            "Die Updates sind ein- & ausklappbar für eine bessere Übersicht.",
+          ],
+        },
+      ],
+    },
+    {
+      version: "v2.3",
       name: "Fixkosten Bearbeitung",
       date: "2026-04-29",
       notes: [
@@ -81,7 +95,7 @@ const chartColors = ["#22c55e", "#f59e0b", "#ef4444", "#0ea5e9", "#8b5cf6", "#14
       ],
     },
     {
-      version: "v2.3",
+      version: "v2.2",
       name: "Neuer Titel | Budget Überarbeitung",
       date: "2026-04-28",
       notes: [
@@ -101,7 +115,92 @@ const chartColors = ["#22c55e", "#f59e0b", "#ef4444", "#0ea5e9", "#8b5cf6", "#14
         },
       ],
     },
+    {
+      version: "v2.1",
+      name: "Mobile-Polish",
+      date: "2026-04-23",
+      notes: [
+        {
+          title: "Mobile-Version Überarbeitung",
+          items: [
+            "Mobile Layout bei mehreren Bereichen verbessert",
+            "Keine Überlappungen mehr",
+            "Übersichtlichere Tabs",
+          ],
+        },
+        {
+          title: "Features verbessert",
+          items: [
+            "Hauptkonto und Sparkonto sauber getrennt",
+            "Sparkonto-Ausleihen besser integriert",
+            "Update-Bereich in den Einstellungen hinzugefügt",
+          ],
+        },
+      ],
+    },
+    {
+      version: "v1.1",
+      name: "Logo Überarbeitung",
+      date: "2026-04-22",
+      notes: [
+        {
+          title: "Logo",
+          items: [
+            "Neues Logo wurde hinzugefügt",
+          ],
+        },
+      ],
+    },
+    {
+      version: "v1.0",
+      name: "Grundapp",
+      date: "2026-04-22",
+      notes: [
+        {
+          title: "Funktionen",
+          items: [
+            "Dashboard",
+            "Buchungen",
+            "Budgets",
+            "Ziele",
+            "Kalender",
+            "Analyse",
+            "Settings",
+          ],
+        },
+      ],
+    },
+
+    /*
+    {
+      version: "v2.5",
+      name: "Sparsystem Update",
+      date: "2026-04-30",
+      notes: [
+        {
+          title: "Sparen",
+          items: [
+            "Sparen wird nicht mehr als negatives Budget angezeigt." "Fynn Tschäppät hohmadstrass 39c Thun 3600",
+            "Neuer Sparplan-Bereich wurde hinzugefügt.",
+          ],
+        },
+        {
+          title: "Design",
+          items: [
+            "Budget-Anzeigen wurden verständlicher gemacht.",
+          ],
+        },
+      ],
+    },
+    */
+
   ];
+
+
+
+
+
+
 
 
 
