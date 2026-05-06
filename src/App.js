@@ -548,6 +548,8 @@ function App() {
   const [selectedCalendarDay, setSelectedCalendarDay] = useState(null);
   const [showAddTransaction, setShowAddTransaction] = useState(false);
 
+  const [payday, setPayday] = useState(seedData.settings.payday);
+
   const [newTransaction, setNewTransaction] = useState({ type: "expense", category: "Freizeit", amount: "", note: "", date: new Date().toISOString().slice(0, 10), bucket: "flex" });
   const [newBudget, setNewBudget] = useState({ name: "", limit: "", resetMode: "monthly" });
   const [newRecurring, setNewRecurring] = useState({ title: "", amount: "", category: "", bucket: "fixed", type: "expense", dayOfMonth: "1", note: "" });
@@ -581,7 +583,7 @@ const [editRecurring, setEditRecurring] = useState({
   dayOfMonth: 1,
 });
 
-const [payday, setPayday] = useState(seedData.settings.payday);
+
 
 const [openVersions, setOpenVersions] = useState({
   [versionHistory[0].version]: true,
@@ -1389,6 +1391,25 @@ function toggleVersion(version) {
             <div style={{ fontWeight: 900, fontSize: 18 }}>Version History</div>
             <div style={{ fontSize: 14, color: "#52525b", marginTop: 4 }}>
               Alle Updates der App auf einen Blick
+            </div>
+
+            <div style={s.softCard}>
+              <div style={{ fontWeight: 800 }}>Finanzmonat startet am</div>
+              <div style={{ fontSize: 14, color: "#71717a", marginTop: 4, marginBottom: 10 }}>
+                Wähle den Tag, an dem dein Lohn kommt.
+              </div>
+
+              <select
+                style={s.input}
+                value={payday}
+                onChange={(e) => setPayday(Number(e.target.value))}
+              >
+                {Array.from({ length: 31 }, (_, i) => i + 1).map((day) => (
+                  <option key={day} value={day}>
+                    {day}.
+                  </option>
+                ))}
+              </select>
             </div>
 
             <div style={{ display: "grid", gap: 10, marginTop: 14 }}>
