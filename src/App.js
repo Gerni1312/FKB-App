@@ -198,24 +198,6 @@ const chartColors = ["#22c55e", "#f59e0b", "#ef4444", "#0ea5e9", "#8b5cf6", "#14
 
 
 
-  
-
-  <select
-    style={s.input}
-    value={payday}
-    onChange={(e) => setPayday(Number(e.target.value))}
-  >
-    {Array.from({ length: 31 }, (_, i) => i + 1).map((day) => (
-      <option key={day} value={day}>
-        {day}.
-      </option>
-    ))}
-  </select>
-
-
-
-
-
 
 
 const seedData = {
@@ -1401,80 +1383,25 @@ function toggleVersion(version) {
         )}
 
         {tab === "settings" && (
-          <div style={{ ...s.softCard, marginBottom: 16, background: "#eff6ff", borderColor: "#bfdbfe" }}>
+        <div style={{ display: "grid", gap: 16 }}>
+          <div style={{ ...s.softCard, background: "#eff6ff", borderColor: "#bfdbfe" }}>
             <div style={{ fontWeight: 900, fontSize: 18 }}>Version History</div>
             <div style={{ fontSize: 14, color: "#52525b", marginTop: 4 }}>
               Alle Updates der App auf einen Blick
             </div>
 
-            <div style={s.softCard}>
-              <div style={{ fontWeight: 800 }}>Finanzmonat startet am</div>
-              <div style={{ fontSize: 14, color: "#71717a", marginTop: 4, marginBottom: 10 }}>
-                Wähle den Tag, an dem dein Lohn kommt.
-              </div>
-
-              <select
-                style={s.input}
-                value={payday}
-                onChange={(e) => setPayday(Number(e.target.value))}
-              >
-                {Array.from({ length: 31 }, (_, i) => i + 1).map((day) => (
-                  <option key={day} value={day}>
-                    {day}.
-                  </option>
-                ))}
-              </select>
-            </div>
-
-            <div style={s.softCard}>
-              <div style={{ fontWeight: 800 }}>Finanzmonat startet am</div>
-              <div style={{ fontSize: 14, color: "#71717a", marginTop: 4, marginBottom: 10 }}>
-                Wähle den Tag, an dem dein Lohn kommt.
-              </div>
-
-              <select
-                style={s.input}
-                value={payday}
-                onChange={(e) => setPayday(Number(e.target.value))}
-              >
-                {Array.from({ length: 31 }, (_, i) => i + 1).map((day) => (
-                  <option key={day} value={day}>
-                    {day}.
-                  </option>
-                ))}
-              </select>
-            </div>
-
             <div style={{ display: "grid", gap: 10, marginTop: 14 }}>
               {versionHistory.map((entry, index) => (
-                <div
-                  key={entry.version}
-                  style={{
-                    background: "white",
-                    border: "1px solid #dbeafe",
-                    borderRadius: 16,
-                    padding: 14,
-                  }}
-                >
-                  <button
-                    style={{
-                      ...s.buttonSecondary,
-                      width: "100%",
-                      justifyContent: "space-between",
-                    }}
-                    onClick={() => toggleVersion(entry.version)}
-                  >
-                    <span>
-                      {entry.version} – {entry.name}
-                    </span>
+                <div key={entry.version} style={{ background: "white", border: "1px solid #dbeafe", borderRadius: 16, padding: 14 }}>
+                  <button style={{ ...s.buttonSecondary, width: "100%", justifyContent: "space-between" }} onClick={() => toggleVersion(entry.version)}>
+                    <span>{entry.version} – {entry.name}</span>
                     <span>{openVersions[entry.version] ? "▲" : "▼"}</span>
                   </button>
 
                   {openVersions[entry.version] && (
                     <div style={{ marginTop: 12 }}>
                       <div style={{ fontSize: 13, color: "#71717a", marginBottom: 8 }}>
-                        {entry.date}
-                        {index === 0 ? " · Neustes Update" : ""}
+                        {entry.date}{index === 0 ? " · Neustes Update" : ""}
                       </div>
 
                       {entry.notes.map((note) => (
@@ -1495,7 +1422,23 @@ function toggleVersion(version) {
               ))}
             </div>
           </div>
-        )}
+
+          <div style={{ display: "grid", gridTemplateColumns: mobileOnly ? "1fr" : "repeat(auto-fit, minmax(250px,1fr))", gap: 16, minWidth: 0 }}>
+            <div style={s.softCard}>
+              <div style={{ fontWeight: 800 }}>Finanzmonat startet am</div>
+              <div style={{ fontSize: 14, color: "#71717a", marginTop: 4, marginBottom: 10 }}>
+                Wähle den Tag, an dem dein Lohn kommt.
+              </div>
+
+              <select style={s.input} value={payday} onChange={(e) => setPayday(Number(e.target.value))}>
+                {Array.from({ length: 31 }, (_, i) => i + 1).map((day) => (
+                  <option key={day} value={day}>{day}.</option>
+                ))}
+              </select>
+            </div>
+          </div>
+        </div>
+      )}
       </div>
 
       {mobileOnly && (
