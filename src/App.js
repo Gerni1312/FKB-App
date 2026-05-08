@@ -197,7 +197,25 @@ const chartColors = ["#22c55e", "#f59e0b", "#ef4444", "#0ea5e9", "#8b5cf6", "#14
   ];
 
 
+  
+  <div style={s.softCard}>
+  <div style={{ fontWeight: 800 }}>Finanzmonat startet am</div>
+  <div style={{ fontSize: 14, color: "#71717a", marginTop: 4, marginBottom: 10 }}>
+    Wähle den Tag, an dem dein Lohn kommt.
+  </div>
 
+  <select
+    style={s.input}
+    value={payday}
+    onChange={(e) => setPayday(Number(e.target.value))}
+  >
+    {Array.from({ length: 31 }, (_, i) => i + 1).map((day) => (
+      <option key={day} value={day}>
+        {day}.
+      </option>
+    ))}
+  </select>
+</div>
 
 
 
