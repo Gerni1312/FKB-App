@@ -211,7 +211,7 @@ const chartColors = ["#22c55e", "#f59e0b", "#ef4444", "#0ea5e9", "#8b5cf6", "#14
       </option>
     ))}
   </select>
-</div>
+
 
 
 
