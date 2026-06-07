@@ -60,6 +60,21 @@ const chartColors = ["#22c55e", "#f59e0b", "#ef4444", "#0ea5e9", "#8b5cf6", "#14
   const mobileOnly = typeof window !== "undefined" && window.innerWidth < 640;
   const versionHistory = [
     {
+      version: "v2.5",
+      name: "Flexibler Finanzmonat",
+      date: "2026-06-07",
+      notes: [
+        {
+          title: "Einstellungen",
+          items: [
+            "Der Finanzmonat kann jetzt individuell festgelegt werden.",
+            "In den Einstellungen lässt sich der Starttag des Monats (z.B. Lohntag) auswählen.",
+            "Alle Auswertungen, Budgets und das Dashboard berücksichtigen den gewählten Starttag.",
+          ],
+        },
+      ],
+    },
+    {
       version: "v2.4",
       name: "Versions-Übersicht",
       date: "2026-05-01",
