@@ -60,6 +60,21 @@ const chartColors = ["#22c55e", "#f59e0b", "#ef4444", "#0ea5e9", "#8b5cf6", "#14
   const mobileOnly = typeof window !== "undefined" && window.innerWidth < 640;
   const versionHistory = [
     {
+      version: "v2.6",
+      name: "Restbudget aufs Sparkonto",
+      date: "2026-06-07",
+      notes: [
+        {
+          title: "Dashboard",
+          items: [
+            "Am Ende des Finanzmonats erscheint ein Banner, wenn Budget übrig ist.",
+            "Mit einem Klick wird das Restbudget direkt aufs Sparkonto gebucht.",
+            "Hauptkonto wird reduziert, Sparkonto erhöht und eine Transaktion erstellt.",
+          ],
+        },
+      ],
+    },
+    {
       version: "v2.5",
       name: "Flexibler Finanzmonat",
       date: "2026-06-07",
@@ -557,6 +572,7 @@ function App() {
   const [search, setSearch] = useState("");
   const [filterBucket, setFilterBucket] = useState("all");
   const [selectedCalendarDay, setSelectedCalendarDay] = useState(null);
+  const [restbudgetDismissed, setRestbudgetDismissed] = useState(false);
   const [showAddTransaction, setShowAddTransaction] = useState(false);
 
   const [payday, setPayday] = useState(seedData.settings.payday);
@@ -680,6 +696,13 @@ const [openVersions, setOpenVersions] = useState({
   }), [budgets, transactions, monthOffset, payday]);
 
   const dangerBudgets = useMemo(() => budgetsWithSpent.filter((b) => b.progress >= 75), [budgetsWithSpent]);
+
+  const totalBudgetRemaining = useMemo(() => budgetsWithSpent.reduce((sum, b) => sum + Math.max(b.remaining, 0), 0), [budgetsWithSpent]);
+
+  const daysUntilMonthEnd = useMemo(() => {
+    const { end } = getMonthBounds(0, payday);
+    return Math.ceil((end - new Date()) / (1000 * 60 * 60 * 24));
+  }, [payday]);
 
   const filteredTransactions = useMemo(() => monthTransactions
     .filter((t) => (filterBucket === "all" ? true : t.bucket === filterBucket))
@@ -828,6 +851,16 @@ const [openVersions, setOpenVersions] = useState({
     setMainAccount((prev) => ({ ...prev, balance: Math.max(Number(prev.balance || 0) - expected, 0) }));
     setTransactions((prev) => [{ id: Date.now() + Math.random(), type: "expense", category: "Sparkonto Ausgleich", amount: expected, note: "Ausgeliehenen Betrag mit Zins zurückgelegt", date: today, bucket: "saving" }, ...prev]);
     setSavingsAccount((prev) => ({ ...prev, balance: Number(prev.balance || 0) + expected, borrowedOut: 0, expectedInterest: 0 }));
+  }
+
+  function handleBookRestbudget() {
+    if (totalBudgetRemaining <= 0) return;
+    const today = new Date().toISOString().slice(0, 10);
+
+    setMainAccount((prev) => ({ ...prev, balance: Math.max(Number(prev.balance || 0) - totalBudgetRemaining, 0) }));
+    setSavingsAccount((prev) => ({ ...prev, balance: Number(prev.balance || 0) + totalBudgetRemaining }));
+    setTransactions((prev) => [{ id: Date.now() + Math.random(), type: "expense", category: "Restbudget gespart", amount: totalBudgetRemaining, note: "Restbudget vom Monat aufs Sparkonto", date: today, bucket: "saving" }, ...prev]);
+    setRestbudgetDismissed(true);
   }
 
   function exportData() {
@@ -988,6 +1021,28 @@ function toggleVersion(version) {
                     <div style={{ fontSize: 14, color: "#92400e", marginTop: 4 }}>{dangerBudgets.length} Budget{dangerBudgets.length > 1 ? "s" : ""} sind fast leer oder überschritten.</div>
                     <div style={{ display: "flex", gap: 8, flexWrap: "wrap", marginTop: 10 }}>
                       {dangerBudgets.map((b) => <span key={b.id} style={{ ...s.badge, color: "#92400e", borderColor: "#fcd34d" }}>{b.name}: {Math.round(b.progress)}%</span>)}
+                    </div>
+                  </div>
+                </div>
+              </div>
+            )}
+
+            {monthOffset === 0 && daysUntilMonthEnd <= 5 && totalBudgetRemaining > 0 && !restbudgetDismissed && (
+              <div style={{ ...s.card, background: "linear-gradient(135deg,#ecfdf5,#d1fae5)", border: "2px solid #6ee7b7", padding: 20, marginBottom: 16 }}>
+                <div style={{ display: "flex", gap: 14, alignItems: "flex-start", flexWrap: "wrap" }}>
+                  <div style={{ fontSize: 32 }}>💰</div>
+                  <div style={{ flex: 1, minWidth: 0 }}>
+                    <div style={{ fontWeight: 900, fontSize: 18, color: "#065f46" }}>Budget-Restgeld verfügbar</div>
+                    <div style={{ fontSize: 14, color: "#047857", marginTop: 6 }}>
+                      Du hast diesen Monat <strong>{money(totalBudgetRemaining, currency)}</strong> Budget übrig. Willst du es aufs Sparkonto verschieben?
+                    </div>
+                    <div style={{ display: "flex", gap: 8, marginTop: 16, flexWrap: "wrap" }}>
+                      <button style={{ ...s.button, background: "#059669", color: "#fff", fontWeight: 800, padding: "10px 20px", fontSize: 15, height: "auto" }} onClick={handleBookRestbudget}>
+                        Als Sparbetrag buchen
+                      </button>
+                      <button style={{ ...s.buttonSecondary, padding: "10px 16px", height: "auto" }} onClick={() => setRestbudgetDismissed(true)}>
+                        Jetzt nicht
+                      </button>
                     </div>
                   </div>
                 </div>
