@@ -60,6 +60,21 @@ const chartColors = ["#22c55e", "#f59e0b", "#ef4444", "#0ea5e9", "#8b5cf6", "#14
   const mobileOnly = typeof window !== "undefined" && window.innerWidth < 640;
   const versionHistory = [
     {
+      version: "v2.9",
+      name: "App-Updates",
+      date: "2026-06-07",
+      notes: [
+        {
+          title: "PWA / Homescreen",
+          items: [
+            "Die App erkennt automatisch wenn eine neue Version verfügbar ist.",
+            "Ein Banner erscheint mit dem Button 'Jetzt aktualisieren'.",
+            "Daten bleiben beim Update vollständig erhalten.",
+          ],
+        },
+      ],
+    },
+    {
       version: "v2.8",
       name: "Fixkosten Bearbeitung verbessert",
       date: "2026-06-09",
@@ -603,6 +618,7 @@ function App() {
   const [filterBucket, setFilterBucket] = useState("all");
   const [selectedCalendarDay, setSelectedCalendarDay] = useState(null);
   const [restbudgetDismissed, setRestbudgetDismissed] = useState(false);
+  const [swUpdateAvailable, setSwUpdateAvailable] = useState(false);
   const [showAddTransaction, setShowAddTransaction] = useState(false);
 
   const [payday, setPayday] = useState(seedData.settings.payday);
@@ -645,6 +661,12 @@ const [editRecurring, setEditRecurring] = useState({
 const [openVersions, setOpenVersions] = useState({
   [versionHistory[0].version]: true,
 });
+
+  useEffect(() => {
+    const handler = () => setSwUpdateAvailable(true);
+    window.addEventListener('swUpdateAvailable', handler);
+    return () => window.removeEventListener('swUpdateAvailable', handler);
+  }, []);
 
   useEffect(() => {
     try {
@@ -895,6 +917,15 @@ const [openVersions, setOpenVersions] = useState({
     setSavingsAccount((prev) => ({ ...prev, balance: Number(prev.balance || 0) + expected, borrowedOut: 0, expectedInterest: 0 }));
   }
 
+  function handleAppUpdate() {
+    if (window.__swWaiting) {
+      window.__swWaiting.postMessage({ type: 'SKIP_WAITING' });
+      navigator.serviceWorker.addEventListener('controllerchange', () => {
+        window.location.reload();
+      });
+    }
+  }
+
   function handleBookRestbudget() {
     if (totalBudgetRemaining <= 0) return;
     const today = new Date().toISOString().slice(0, 10);
@@ -1032,6 +1063,16 @@ function toggleVersion(version) {
             <div style={{ display: "flex", gap: 8, marginTop: 12 }}>
               <button style={s.button} onClick={addTransaction}>Speichern</button>
               <button style={s.buttonSecondary} onClick={() => setShowAddTransaction(false)}>Schliessen</button>
+            </div>
+          </div>
+        )}
+
+        {swUpdateAvailable && (
+          <div style={{ background: "linear-gradient(135deg,#1e1b4b,#312e81)", borderRadius: 20, padding: "14px 18px", marginTop: 16, display: "flex", alignItems: "center", justifyContent: "space-between", gap: 12, flexWrap: "wrap" }}>
+            <div style={{ color: "white", fontWeight: 700, fontSize: 15 }}>🆕 Neue Version verfügbar</div>
+            <div style={{ display: "flex", gap: 8 }}>
+              <button style={{ ...s.button, background: "white", color: "#312e81", fontWeight: 800 }} onClick={handleAppUpdate}>Jetzt aktualisieren</button>
+              <button style={{ ...s.button, background: "transparent", color: "white", border: "1px solid rgba(255,255,255,0.3)" }} onClick={() => setSwUpdateAvailable(false)}>Später</button>
             </div>
           </div>
         )}
