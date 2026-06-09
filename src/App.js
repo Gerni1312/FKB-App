@@ -60,6 +60,21 @@ const chartColors = ["#22c55e", "#f59e0b", "#ef4444", "#0ea5e9", "#8b5cf6", "#14
   const mobileOnly = typeof window !== "undefined" && window.innerWidth < 640;
   const versionHistory = [
     {
+      version: "v2.8",
+      name: "Fixkosten Bearbeitung verbessert",
+      date: "2026-06-07",
+      notes: [
+        {
+          title: "Wiederkehrende Ausgaben",
+          items: [
+            "Beim Bearbeiten werden jetzt Kategorie- und Zahlungstag-Dropdowns angezeigt.",
+            "Doppelte Anzeige beim Bearbeiten wurde behoben.",
+            "Speichern- und Abbrechen-Buttons sind jetzt korrekt gestylt.",
+          ],
+        },
+      ],
+    },
+    {
       version: "v2.7",
       name: "Sparplan",
       date: "2026-06-07",
@@ -1236,44 +1251,58 @@ function toggleVersion(version) {
                 {recurring.map((r) => (
                   <div key={r.id} style={s.softCard}>
                     {editingRecurringId === r.id ? (
-                      <>
+                      <div style={{ display: "grid", gap: 10 }}>
                         <input
                           style={s.input}
+                          placeholder="Titel"
                           value={editRecurring.title}
-                          onChange={(e) =>
-                            setEditRecurring((p) => ({ ...p, title: e.target.value }))
-                          }
+                          onChange={(e) => setEditRecurring((p) => ({ ...p, title: e.target.value }))}
                         />
                         <input
                           style={s.input}
                           type="number"
+                          placeholder="Betrag"
                           value={editRecurring.amount}
-                          onChange={(e) =>
-                            setEditRecurring((p) => ({ ...p, amount: e.target.value }))
-                          }
+                          onChange={(e) => setEditRecurring((p) => ({ ...p, amount: e.target.value }))}
                         />
-
-                        <button onClick={() => saveEditRecurring(r.id)}>Speichern</button>
-                        <button onClick={cancelEditRecurring}>Abbrechen</button>
-                      </>
+                        <select
+                          style={s.input}
+                          value={editRecurring.category}
+                          onChange={(e) => setEditRecurring((p) => ({ ...p, category: e.target.value }))}
+                        >
+                          <option value="">Kategorie wählen</option>
+                          {categories.map((cat) => (
+                            <option key={cat} value={cat}>{cat}</option>
+                          ))}
+                        </select>
+                        <select
+                          style={s.input}
+                          value={editRecurring.dayOfMonth}
+                          onChange={(e) => setEditRecurring((p) => ({ ...p, dayOfMonth: Number(e.target.value) }))}
+                        >
+                          {Array.from({ length: 31 }, (_, i) => i + 1).map((day) => (
+                            <option key={day} value={day}>Monatlich am {day}.</option>
+                          ))}
+                        </select>
+                        <div style={{ display: "flex", gap: 8 }}>
+                          <button style={s.button} onClick={() => saveEditRecurring(r.id)}>Speichern</button>
+                          <button style={s.buttonSecondary} onClick={cancelEditRecurring}>Abbrechen</button>
+                        </div>
+                      </div>
                     ) : (
-                      <>
-                        <div>{r.title}</div>
-                        <div>{money(r.amount, currency)} · {r.category} · Tag {r.dayOfMonth}</div>
-                      </>
+                      <div style={{ display: "flex", justifyContent: "space-between", gap: 12, flexWrap: "wrap", alignItems: "center" }}>
+                        <div>
+                          <div style={{ fontWeight: 800 }}>{r.title}</div>
+                          <div style={{ color: "#71717a", fontSize: 14, marginTop: 4 }}>{money(r.amount, currency)} · {r.category} · Tag {r.dayOfMonth}</div>
+                        </div>
+                        <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
+                          <span style={s.badge}>{r.active ? "Aktiv" : "Pausiert"}</span>
+                          <button style={s.buttonSecondary} onClick={() => startEditRecurring(r)}>Bearbeiten</button>
+                          <button style={s.buttonSecondary} onClick={() => toggleRecurring(r.id)}>{r.active ? "Pausieren" : "Aktivieren"}</button>
+                          <button style={{ ...s.buttonSecondary, width: 44, padding: 0 }} onClick={() => deleteRecurring(r.id)}><Trash2 size={16} /></button>
+                        </div>
+                      </div>
                     )}
-                    <div style={{ display: "flex", justifyContent: "space-between", gap: 12, flexWrap: "wrap", alignItems: "center" }}>
-                      <div>
-                        <div style={{ fontWeight: 800 }}>{r.title}</div>
-                        <div style={{ color: "#71717a", fontSize: 14, marginTop: 4 }}>{money(r.amount, currency)} · {r.category} · Tag {r.dayOfMonth}</div>
-                      </div>
-                      <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
-                        <span style={s.badge}>{r.active ? "Aktiv" : "Pausiert"}</span>
-                        <button style={s.buttonSecondary} onClick={() => startEditRecurring(r)}>Bearbeiten</button>
-                        <button style={s.buttonSecondary} onClick={() => toggleRecurring(r.id)}>{r.active ? "Pausieren" : "Aktivieren"}</button>
-                        <button style={{ ...s.buttonSecondary, width: 44, padding: 0 }} onClick={() => deleteRecurring(r.id)}><Trash2 size={16} /></button>
-                      </div>
-                    </div>
                   </div>
                 ))}
               </div>
