@@ -62,7 +62,7 @@ const chartColors = ["#22c55e", "#f59e0b", "#ef4444", "#0ea5e9", "#8b5cf6", "#14
     {
       version: "v2.8",
       name: "Fixkosten Bearbeitung verbessert",
-      date: "2026-06-07",
+      date: "2026-06-09",
       notes: [
         {
           title: "Wiederkehrende Ausgaben",
