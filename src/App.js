@@ -60,6 +60,21 @@ const chartColors = ["#22c55e", "#f59e0b", "#ef4444", "#0ea5e9", "#8b5cf6", "#14
   const mobileOnly = typeof window !== "undefined" && window.innerWidth < 640;
   const versionHistory = [
     {
+      version: "v2.7",
+      name: "Sparplan",
+      date: "2026-06-07",
+      notes: [
+        {
+          title: "Budgets",
+          items: [
+            "Sparen wird nicht mehr als normales Budget angezeigt.",
+            "Neuer Sparplan-Bereich oben im Budget-Tab mit positivem Fortschritt.",
+            "Status: 'Auf Kurs', 'Fast erreicht', 'Ziel erreicht' statt Warnung.",
+          ],
+        },
+      ],
+    },
+    {
       version: "v2.6",
       name: "Restbudget aufs Sparkonto",
       date: "2026-06-07",
@@ -704,6 +719,18 @@ const [openVersions, setOpenVersions] = useState({
     return Math.ceil((end - new Date()) / (1000 * 60 * 60 * 24));
   }, [payday]);
 
+  const savingPlanStatus = useMemo(() => {
+    const goal = Number(savingsAccount.plannedMonthlyDeposit || 0);
+    const actual = totals.saving;
+    const progress = goal > 0 ? Math.min((actual / goal) * 100, 999) : 0;
+    let label, color, bg, border;
+    if (progress >= 100) { label = "Ziel erreicht 🎉"; color = "#b45309"; bg = "#fffbeb"; border = "#fde68a"; }
+    else if (progress >= 75) { label = "Fast erreicht"; color = "#1d4ed8"; bg = "#eff6ff"; border = "#bfdbfe"; }
+    else if (progress >= 25) { label = "Auf Kurs"; color = "#15803d"; bg = "#f0fdf4"; border = "#bbf7d0"; }
+    else { label = "Noch am Start"; color = "#71717a"; bg = "#fafafa"; border = "#e4e4e7"; }
+    return { goal, actual, progress, label, color, bg, border };
+  }, [savingsAccount.plannedMonthlyDeposit, totals.saving]);
+
   const filteredTransactions = useMemo(() => monthTransactions
     .filter((t) => (filterBucket === "all" ? true : t.bucket === filterBucket))
     .filter((t) => {
@@ -1140,6 +1167,22 @@ function toggleVersion(version) {
 
         {tab === "budgets" && (
           <div style={{ display: "grid", gap: 16 }}>
+
+            <div style={{ ...s.card, background: savingPlanStatus.bg, border: `2px solid ${savingPlanStatus.border}`, padding: 18 }}>
+              <SectionTitle title="Sparplan" description="Dein monatliches Sparziel auf einen Blick" />
+              <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", gap: 12, flexWrap: "wrap", marginBottom: 12 }}>
+                <div>
+                  <div style={{ fontSize: 28, fontWeight: 900, color: savingPlanStatus.color }}>{money(savingPlanStatus.actual, currency)}</div>
+                  <div style={{ fontSize: 14, color: "#52525b", marginTop: 4 }}>von {money(savingPlanStatus.goal, currency)} Sparziel diesen Monat</div>
+                </div>
+                <span style={{ ...s.badge, color: savingPlanStatus.color, borderColor: savingPlanStatus.border, background: "white", fontSize: 14, padding: "8px 14px" }}>{savingPlanStatus.label}</span>
+              </div>
+              <ProgressBar value={savingPlanStatus.progress} color={savingPlanStatus.color} />
+              {savingPlanStatus.goal === 0 && (
+                <div style={{ fontSize: 13, color: "#71717a", marginTop: 10 }}>Kein monatliches Sparziel gesetzt. Trag es im Ziele-Tab unter "Konten" ein.</div>
+              )}
+            </div>
+
             <div style={{ ...s.card, padding: 18 }}>
               <SectionTitle title="Budget hinzufügen" description="Lege Limits pro Kategorie fest" />
               <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(180px,1fr))", gap: 12 }}>
@@ -1237,7 +1280,7 @@ function toggleVersion(version) {
             </div>
 
             <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(320px,1fr))", gap: 16 }}>
-              {budgetsWithSpent.map((budget) => (
+              {budgetsWithSpent.filter((b) => b.name.toLowerCase() !== "sparen").map((budget) => (
                 <div key={budget.id} style={{ ...s.card, padding: 18 }}>
                   <div style={{ display: "flex", justifyContent: "space-between", gap: 10, alignItems: "start" }}>
                     <div>
