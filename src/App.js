@@ -60,7 +60,7 @@ const chartColors = ["#22c55e", "#f59e0b", "#ef4444", "#0ea5e9", "#8b5cf6", "#14
   const mobileOnly = typeof window !== "undefined" && window.innerWidth < 640;
   const versionHistory = [
     {
-      version: "v3.0",
+      version: "v3.1",
       name: "Mobile Fixes",
       date: "2026-06-09",
       notes: [
@@ -438,7 +438,6 @@ function styles() {
       background: "#f4f4f5",
       color: "#18181b",
       fontFamily: "Inter, system-ui, sans-serif",
-      overflowX: "clip",
     },
     container: {
       maxWidth: 1400,
@@ -451,6 +450,7 @@ function styles() {
       borderRadius: 28,
       padding: 24,
       boxShadow: "0 20px 50px rgba(0,0,0,0.25)",
+      overflow: "hidden",
     },
     card: {
       background: "white",
@@ -1488,7 +1488,7 @@ function toggleVersion(version) {
 
         {tab === "calendar" && (
           <div style={{ display: "grid", gap: 16 }}>
-            <div style={{ ...s.card, padding: 18 }}>
+            <div style={{ ...s.card, padding: 18, overflow: "hidden" }}>
               <SectionTitle title="Kalenderansicht pro Monat" description="Sieh auf einen Blick, an welchen Tagen du Geld bekommen oder ausgegeben hast" />
               <div style={{ display: "grid", gridTemplateColumns: "repeat(7,1fr)", gap: 8, fontSize: 12, color: "#71717a", fontWeight: 800, marginBottom: 10 }}>
                 {["Mo", "Di", "Mi", "Do", "Fr", "Sa", "So"].map((d) => <div key={d} style={{ textAlign: "center" }}>{d}</div>)}
