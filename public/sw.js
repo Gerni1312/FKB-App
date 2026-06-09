@@ -1,6 +1,6 @@
 // FKB Finance App — Service Worker
 // Version hier hochzählen wenn ein Update ausgeliefert werden soll: v2.9
-const CACHE_NAME = 'fkb-app-v2.9';
+const CACHE_NAME = 'fkb-app-v3.0';
 
 const SHELL = [
   '/',

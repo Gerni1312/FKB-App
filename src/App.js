@@ -60,6 +60,22 @@ const chartColors = ["#22c55e", "#f59e0b", "#ef4444", "#0ea5e9", "#8b5cf6", "#14
   const mobileOnly = typeof window !== "undefined" && window.innerWidth < 640;
   const versionHistory = [
     {
+      version: "v3.0",
+      name: "Mobile Fixes",
+      date: "2026-06-09",
+      notes: [
+        {
+          title: "Mobile Layout",
+          items: [
+            "Navbar bleibt jetzt zuverlässig unten — iOS Safari Bug behoben.",
+            "Das schwarze Header-Feld geht jetzt über die ganze Breite.",
+            "Version History hat nun korrekten Abstand und läuft nicht mehr rechts raus.",
+            "Der 'Monatsanfang ausgleichen'-Button bricht jetzt sauber auf zwei Zeilen um.",
+          ],
+        },
+      ],
+    },
+    {
       version: "v2.9",
       name: "App-Updates",
       date: "2026-06-07",
@@ -422,6 +438,7 @@ function styles() {
       background: "#f4f4f5",
       color: "#18181b",
       fontFamily: "Inter, system-ui, sans-serif",
+      overflowX: "clip",
     },
     container: {
       maxWidth: 1400,
@@ -532,8 +549,7 @@ function styles() {
       left: 0,
       right: 0,
       bottom: 0,
-      background: "rgba(255,255,255,0.95)",
-      backdropFilter: "blur(12px)",
+      background: "#ffffff",
       borderTop: "1px solid #e4e4e7",
       padding: 10,
       zIndex: 50,
@@ -1437,7 +1453,7 @@ function toggleVersion(version) {
                     <button style={s.button} onClick={handleBorrowFromSavings}>Ausleihen</button>
                   </div>
 
-                  <button style={{ ...s.buttonSecondary, width: "100%", marginTop: 14 }} onClick={settleBorrowedSavings}>Monatsanfang ausgleichen + Zins zurücklegen</button>
+                  <button style={{ ...s.buttonSecondary, width: "100%", marginTop: 14, whiteSpace: "normal", height: "auto", padding: "12px 16px", lineHeight: 1.4, textAlign: "center" }} onClick={settleBorrowedSavings}>Monatsanfang ausgleichen + Zins zurücklegen</button>
                 </div>
               </div>
             </div>
@@ -1566,8 +1582,8 @@ function toggleVersion(version) {
         )}
 
         {tab === "settings" && (
-        <div style={{ display: "grid", gap: 16 }}>
-          <div style={{ ...s.softCard, background: "#eff6ff", borderColor: "#bfdbfe" }}>
+        <div style={{ display: "grid", gap: 16, marginTop: 8 }}>
+          <div style={{ ...s.softCard, background: "#eff6ff", borderColor: "#bfdbfe", overflow: "hidden" }}>
             <div style={{ fontWeight: 900, fontSize: 18 }}>Version History</div>
             <div style={{ fontSize: 14, color: "#52525b", marginTop: 4 }}>
               Alle Updates der App auf einen Blick
@@ -1576,7 +1592,7 @@ function toggleVersion(version) {
             <div style={{ display: "grid", gap: 10, marginTop: 14 }}>
               {versionHistory.map((entry, index) => (
                 <div key={entry.version} style={{ background: "white", border: "1px solid #dbeafe", borderRadius: 16, padding: 14 }}>
-                  <button style={{ ...s.buttonSecondary, width: "100%", justifyContent: "space-between" }} onClick={() => toggleVersion(entry.version)}>
+                  <button style={{ ...s.buttonSecondary, width: "100%", justifyContent: "space-between", whiteSpace: "normal", height: "auto", padding: "10px 14px", textAlign: "left" }} onClick={() => toggleVersion(entry.version)}>
                     <span>{entry.version} – {entry.name}</span>
                     <span>{openVersions[entry.version] ? "▲" : "▼"}</span>
                   </button>
