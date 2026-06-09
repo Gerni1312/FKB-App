@@ -60,6 +60,21 @@ const chartColors = ["#22c55e", "#f59e0b", "#ef4444", "#0ea5e9", "#8b5cf6", "#14
   const mobileOnly = typeof window !== "undefined" && window.innerWidth < 640;
   const versionHistory = [
     {
+      version: "v3.2",
+      name: "Header überarbeitet",
+      date: "2026-06-09",
+      notes: [
+        {
+          title: "Design",
+          items: [
+            "Slogan wurde auf 'Secure. Smart. Simple.' aktualisiert.",
+            "Haupttitel lautet neu 'Dein Geld. Deine Kontrolle.'",
+            "Untertitel wurde vereinfacht und auf den Punkt gebracht.",
+          ],
+        },
+      ],
+    },
+    {
       version: "v3.1",
       name: "Mobile Fixes",
       date: "2026-06-09",
@@ -1025,11 +1040,11 @@ function toggleVersion(version) {
             <div>
               <div style={{ display: "flex", gap: 8, flexWrap: "wrap", alignItems: "center" }}>
                 <div style={{ fontSize: 12, letterSpacing: 3, textTransform: "uppercase", opacity: 0.65 }}>Fynn Kantonal Bank</div>
-                              <span style={{ ...s.badge, background: "rgba(255,255,255,0.1)", border: "1px solid rgba(255,255,255,0.12)", color: "white" }}>A bank free of Jews</span>
+                              <span style={{ ...s.badge, background: "rgba(255,255,255,0.1)", border: "1px solid rgba(255,255,255,0.12)", color: "white" }}>Secure. Smart. Simple.</span>
               </div>
-              <div style={{ fontSize: 38, fontWeight: 900, marginTop: 10, lineHeight: 1.05 }}>Dein Geld. Endlich unter Kontrolle.</div>
+              <div style={{ fontSize: 38, fontWeight: 900, marginTop: 10, lineHeight: 1.05 }}>Dein Geld. Deine Kontrolle.</div>
               <div style={{ marginTop: 10, maxWidth: 760, color: "rgba(255,255,255,0.78)", fontSize: 15 }}>
-                Gleiche starke Finanz-App, aber mit besser integrierten Konten. Hauptkonto und Sparkonto sind jetzt sauber getrennt.
+                Einnahmen, Ausgaben und Sparziele — alles auf einen Blick.
               </div>
             </div>
 
