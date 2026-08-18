@@ -752,26 +752,29 @@ const [openVersions, setOpenVersions] = useState({
   }, [transactions, budgets, recurring, goals, mainAccount, savingsAccount, currency, weeklyMode, monthOffset, payday]);
 
   useEffect(() => {
-    const recurringToApply = recurring.filter((r) => r.active && r.lastAppliedMonth !== selectedMonthKey);
+    // Nur Einträge die wirklich dran sind (jährliche nur im richtigen Monat)
+    const recurringToApply = recurring.filter((r) => {
+      if (!r.active || r.lastAppliedMonth === selectedMonthKey) return false;
+      if (r.frequency === "yearly") return (r.monthOfYear || 1) === selectedMonthDate.getMonth() + 1;
+      return true;
+    });
     if (recurringToApply.length === 0) return;
 
+    // Berechnung komplett vor den State-Updates
     const newTransactions = [];
-    const updatedRecurring = recurring.map((r) => {
-      if (!r.active || r.lastAppliedMonth === selectedMonthKey) return r;
-      if (r.frequency === "yearly") {
-        const correctMonth = (r.monthOfYear || 1) === selectedMonthDate.getMonth() + 1;
-        if (!correctMonth) return r;
-      }
+    const updatedItems = new Map();
+    for (const r of recurringToApply) {
       const autoDate = getRecurringDateForMonth(selectedMonthDate, r.dayOfMonth);
       const transactionExists = transactions.some((t) => t.note === `[AUTO] ${r.title}` && t.date === autoDate && t.amount === Number(r.amount) && t.category === r.category && t.bucket === r.bucket);
       if (!transactionExists) {
         newTransactions.push({ id: Date.now() + Math.random(), type: r.type, category: r.category, amount: Number(r.amount), note: `[AUTO] ${r.title}`, date: autoDate, bucket: r.bucket });
       }
-      return { ...r, lastAppliedMonth: selectedMonthKey };
-    });
+      updatedItems.set(r.id, { ...r, lastAppliedMonth: selectedMonthKey });
+    }
 
+    // Functional updater: arbeitet immer mit dem aktuellsten Stand
+    setRecurring((prev) => prev.map((r) => updatedItems.has(r.id) ? updatedItems.get(r.id) : r));
     if (newTransactions.length > 0) setTransactions((prev) => [...newTransactions, ...prev]);
-    setRecurring(updatedRecurring);
   }, [selectedMonthKey, selectedMonthDate, recurring, transactions]);
 
   const monthTransactions = useMemo(
