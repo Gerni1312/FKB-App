@@ -60,6 +60,21 @@ const chartColors = ["#22c55e", "#f59e0b", "#ef4444", "#0ea5e9", "#8b5cf6", "#14
   const mobileOnly = typeof window !== "undefined" && window.innerWidth < 640;
   const versionHistory = [
     {
+      version: "v3.3",
+      name: "Jährliche Fixkosten",
+      date: "2026-06-09",
+      notes: [
+        {
+          title: "Wiederkehrende Ausgaben",
+          items: [
+            "Fixkosten können jetzt als jährlich oder monatlich angelegt werden.",
+            "Bei jährlichen Ausgaben wählt man zusätzlich den Monat.",
+            "Die Buchung wird automatisch nur im richtigen Monat erstellt.",
+          ],
+        },
+      ],
+    },
+    {
       version: "v3.2",
       name: "Header überarbeitet",
       date: "2026-06-09",
@@ -656,7 +671,7 @@ function App() {
 
   const [newTransaction, setNewTransaction] = useState({ type: "expense", category: "Freizeit", amount: "", note: "", date: new Date().toISOString().slice(0, 10), bucket: "flex" });
   const [newBudget, setNewBudget] = useState({ name: "", limit: "", resetMode: "monthly" });
-  const [newRecurring, setNewRecurring] = useState({ title: "", amount: "", category: "", bucket: "fixed", type: "expense", dayOfMonth: "1", note: "" });
+  const [newRecurring, setNewRecurring] = useState({ title: "", amount: "", category: "", bucket: "fixed", type: "expense", dayOfMonth: "1", frequency: "monthly", monthOfYear: 1, note: "" });
   const [newGoal, setNewGoal] = useState({ name: "", target: "", current: "0" });
   const [goalContribution, setGoalContribution] = useState({});
   const [savingsTransfer, setSavingsTransfer] = useState({ type: "deposit", amount: "", note: "" });
@@ -685,6 +700,8 @@ const [editRecurring, setEditRecurring] = useState({
   amount: "",
   category: "",
   dayOfMonth: 1,
+  frequency: "monthly",
+  monthOfYear: 1,
 });
 
 
@@ -738,6 +755,10 @@ const [openVersions, setOpenVersions] = useState({
     const newTransactions = [];
     const updatedRecurring = recurring.map((r) => {
       if (!r.active || r.lastAppliedMonth === selectedMonthKey) return r;
+      if (r.frequency === "yearly") {
+        const correctMonth = (r.monthOfYear || 1) === selectedMonthDate.getMonth() + 1;
+        if (!correctMonth) return r;
+      }
       const autoDate = getRecurringDateForMonth(selectedMonthDate, r.dayOfMonth);
       const transactionExists = transactions.some((t) => t.note === `[AUTO] ${r.title}` && t.date === autoDate && t.amount === Number(r.amount) && t.category === r.category && t.bucket === r.bucket);
       if (!transactionExists) {
@@ -863,7 +884,7 @@ const [openVersions, setOpenVersions] = useState({
     const dayOfMonth = Number(newRecurring.dayOfMonth);
     if (!newRecurring.title || !newRecurring.category || !amount || amount <= 0) return;
     setRecurring((prev) => [...prev, { id: Date.now(), ...newRecurring, amount, dayOfMonth, active: true, lastAppliedMonth: null }]);
-    setNewRecurring({ title: "", amount: "", category: "", bucket: "fixed", type: "expense", dayOfMonth: "1", note: "" });
+    setNewRecurring({ title: "", amount: "", category: "", bucket: "fixed", type: "expense", dayOfMonth: "1", frequency: "monthly", monthOfYear: 1, note: "" });
   }
 
   function toggleRecurring(id) {
@@ -1022,6 +1043,8 @@ function toggleVersion(version) {
 }
 
 
+
+  const monthNames = ["Januar", "Februar", "März", "April", "Mai", "Juni", "Juli", "August", "September", "Oktober", "November", "Dezember"];
 
   const tabButtonStyle = (active) => ({
     ...s.tabButton,
@@ -1305,15 +1328,30 @@ function toggleVersion(version) {
 
                 <select
                   style={s.input}
+                  value={newRecurring.frequency}
+                  onChange={(e) => setNewRecurring((p) => ({ ...p, frequency: e.target.value }))}
+                >
+                  <option value="monthly">Monatlich</option>
+                  <option value="yearly">Jährlich</option>
+                </select>
+                {newRecurring.frequency === "yearly" && (
+                  <select
+                    style={s.input}
+                    value={newRecurring.monthOfYear}
+                    onChange={(e) => setNewRecurring((p) => ({ ...p, monthOfYear: Number(e.target.value) }))}
+                  >
+                    {monthNames.map((m, i) => (
+                      <option key={i} value={i + 1}>{m}</option>
+                    ))}
+                  </select>
+                )}
+                <select
+                  style={s.input}
                   value={newRecurring.dayOfMonth}
-                  onChange={(e) =>
-                    setNewRecurring((p) => ({ ...p, dayOfMonth: Number(e.target.value) }))
-                  }
+                  onChange={(e) => setNewRecurring((p) => ({ ...p, dayOfMonth: Number(e.target.value) }))}
                 >
                   {Array.from({ length: 31 }, (_, i) => i + 1).map((day) => (
-                    <option key={day} value={day}>
-                      Monatlich am {day}.
-                    </option>
+                    <option key={day} value={day}>am {day}.</option>
                   ))}
                 </select>
                 <button style={s.button} onClick={addRecurring}>Hinzufügen</button>
@@ -1349,11 +1387,30 @@ function toggleVersion(version) {
                         </select>
                         <select
                           style={s.input}
+                          value={editRecurring.frequency || "monthly"}
+                          onChange={(e) => setEditRecurring((p) => ({ ...p, frequency: e.target.value }))}
+                        >
+                          <option value="monthly">Monatlich</option>
+                          <option value="yearly">Jährlich</option>
+                        </select>
+                        {(editRecurring.frequency || "monthly") === "yearly" && (
+                          <select
+                            style={s.input}
+                            value={editRecurring.monthOfYear || 1}
+                            onChange={(e) => setEditRecurring((p) => ({ ...p, monthOfYear: Number(e.target.value) }))}
+                          >
+                            {monthNames.map((m, i) => (
+                              <option key={i} value={i + 1}>{m}</option>
+                            ))}
+                          </select>
+                        )}
+                        <select
+                          style={s.input}
                           value={editRecurring.dayOfMonth}
                           onChange={(e) => setEditRecurring((p) => ({ ...p, dayOfMonth: Number(e.target.value) }))}
                         >
                           {Array.from({ length: 31 }, (_, i) => i + 1).map((day) => (
-                            <option key={day} value={day}>Monatlich am {day}.</option>
+                            <option key={day} value={day}>am {day}.</option>
                           ))}
                         </select>
                         <div style={{ display: "flex", gap: 8 }}>
@@ -1365,7 +1422,7 @@ function toggleVersion(version) {
                       <div style={{ display: "flex", justifyContent: "space-between", gap: 12, flexWrap: "wrap", alignItems: "center" }}>
                         <div>
                           <div style={{ fontWeight: 800 }}>{r.title}</div>
-                          <div style={{ color: "#71717a", fontSize: 14, marginTop: 4 }}>{money(r.amount, currency)} · {r.category} · Tag {r.dayOfMonth}</div>
+                          <div style={{ color: "#71717a", fontSize: 14, marginTop: 4 }}>{money(r.amount, currency)} · {r.category} · {r.frequency === "yearly" ? `Jährlich im ${monthNames[(r.monthOfYear || 1) - 1]}, Tag ${r.dayOfMonth}` : `Monatlich, Tag ${r.dayOfMonth}`}</div>
                         </div>
                         <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
                           <span style={s.badge}>{r.active ? "Aktiv" : "Pausiert"}</span>
