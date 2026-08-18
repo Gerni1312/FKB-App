@@ -69,7 +69,7 @@ const chartColors = ["#22c55e", "#f59e0b", "#ef4444", "#0ea5e9", "#8b5cf6", "#14
           items: [
             "Fixkosten können jetzt als jährlich oder monatlich angelegt werden.",
             "Bei jährlichen Ausgaben wählt man zusätzlich den Monat.",
-            "Die Buchung wird automatisch nur im richtigen Monat erstellt.",
+            "Die Buchung wird automatisch im richtigen Monat erstellt.",
           ],
         },
       ],
