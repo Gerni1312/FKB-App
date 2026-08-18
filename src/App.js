@@ -46,6 +46,9 @@ const categories = [
     "Handy",
     "Gaming",
     "Sparen",
+    "Haushalt",
+    "Elektronik",
+    "Alkohol",
     "Sonstiges",
 ];
 
