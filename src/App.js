@@ -1314,7 +1314,7 @@ function toggleVersion(version) {
 
             <div style={{ display: "grid", gap: 12, marginTop: 16 }}>
               {filteredTransactions.map((t) => (
-                <div key={t.id} style={{ ...s.softCard, background: "white" }}>
+                <div key={t.id} style={{ ...s.softCard, background: s.surface }}>
                   <div style={{ display: "flex", justifyContent: "space-between", gap: 12, flexWrap: "wrap" }}>
                     <div style={{ minWidth: 0 }}>
                       <div style={{ display: "flex", gap: 8, alignItems: "center", flexWrap: "wrap" }}>
@@ -1556,10 +1556,10 @@ function toggleVersion(version) {
                   </div>
 
                   <div style={{ display: "grid", gridTemplateColumns: mobileOnly ? "1fr 1fr" : "repeat(4,1fr)", gap: 10, marginTop: 14, minWidth: 0 }}>
-                    <div style={{ ...s.softCard, background: "white" }}><div style={{ fontSize: 13, color: "#71717a" }}>Hauptkonto</div><div style={{ fontWeight: 800, marginTop: 5 }}>{money(mainAccount.balance, currency)}</div></div>
-                    <div style={{ ...s.softCard, background: "white" }}><div style={{ fontSize: 13, color: "#71717a" }}>Frei auf Sparkonto</div><div style={{ fontWeight: 800, marginTop: 5 }}>{money(savingsSummary.availableOnSavings, currency)}</div></div>
-                    <div style={{ ...s.softCard, background: "white" }}><div style={{ fontSize: 13, color: "#71717a" }}>Kommt zurück</div><div style={{ fontWeight: 800, marginTop: 5 }}>{money(savingsSummary.expectedBackNextMonth, currency)}</div></div>
-                    <div style={{ ...s.softCard, background: "white" }}><div style={{ fontSize: 13, color: "#71717a" }}>Total beide Konten</div><div style={{ fontWeight: 800, marginTop: 5 }}>{money(accountSummary.totalCash, currency)}</div></div>
+                    <div style={{ ...s.softCard, background: s.surface }}><div style={{ fontSize: 13, color: s.textMuted }}>Hauptkonto</div><div style={{ fontWeight: 800, marginTop: 5 }}>{money(mainAccount.balance, currency)}</div></div>
+                    <div style={{ ...s.softCard, background: s.surface }}><div style={{ fontSize: 13, color: s.textMuted }}>Frei auf Sparkonto</div><div style={{ fontWeight: 800, marginTop: 5 }}>{money(savingsSummary.availableOnSavings, currency)}</div></div>
+                    <div style={{ ...s.softCard, background: s.surface }}><div style={{ fontSize: 13, color: s.textMuted }}>Kommt zurück</div><div style={{ fontWeight: 800, marginTop: 5 }}>{money(savingsSummary.expectedBackNextMonth, currency)}</div></div>
+                    <div style={{ ...s.softCard, background: s.surface }}><div style={{ fontSize: 13, color: s.textMuted }}>Total beide Konten</div><div style={{ fontWeight: 800, marginTop: 5 }}>{money(accountSummary.totalCash, currency)}</div></div>
                   </div>
                 </div>
 
@@ -1630,12 +1630,12 @@ function toggleVersion(version) {
               </div>
               <div style={{ display: "grid", gridTemplateColumns: "repeat(7,1fr)", gap: 8 }}>
                 {calendarCells.map((cell, index) => {
-                  if (!cell) return <div key={index} style={{ minHeight: 92, borderRadius: 18, background: darkMode ? "rgba(255,255,255,0.05)" : "#e4e4e7" }} />;
+                  if (!cell) return <div key={index} style={{ minHeight: 92, borderRadius: 18, background: darkMode ? "rgba(255,255,255,0.08)" : "#e4e4e7" }} />;
                   const tone = cell.net < 0
                     ? { border: `1px solid ${darkMode ? "rgba(220,38,38,0.3)" : "#fecdd3"}`, background: darkMode ? "rgba(220,38,38,0.1)" : "#fff1f2" }
                     : cell.income > 0
                     ? { border: `1px solid ${darkMode ? "rgba(22,163,74,0.3)" : "#bbf7d0"}`, background: darkMode ? "rgba(22,163,74,0.1)" : "#f0fdf4" }
-                    : { border: `1px solid ${darkMode ? "rgba(255,255,255,0.08)" : "#e4e4e7"}`, background: darkMode ? "rgba(255,255,255,0.03)" : "white" };
+                    : { border: `1px solid ${darkMode ? "rgba(255,255,255,0.1)" : "#e4e4e7"}`, background: darkMode ? "rgba(255,255,255,0.07)" : "white" };
                   return (
                     <button key={cell.date} onClick={() => setSelectedCalendarDay(cell)} style={{ minHeight: 92, borderRadius: 18, padding: 10, border: tone.border, background: tone.background, textAlign: "left", cursor: "pointer" }}>
                       <div style={{ display: "flex", justifyContent: "space-between", gap: 8 }}><div style={{ fontWeight: 800 }}>{cell.day}</div>{cell.transactions.length > 0 ? <span style={{ ...s.badge, fontSize: 10, padding: "4px 8px" }}>{cell.transactions.length}</span> : null}</div>
@@ -1680,15 +1680,31 @@ function toggleVersion(version) {
             <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(320px,1fr))", gap: 16 }}>
               <div style={{ ...s.card, padding: 18 }}>
                 <SectionTitle title="Ausgaben nach Kategorie" description="Wohin dein Geld wirklich geht" />
-                <div style={{ width: "100%", height: 320 }}>
-                  <ResponsiveContainer width="100%" height="100%">
-                    <PieChart>
-                      <Pie data={spendingByCategory} dataKey="value" nameKey="name" outerRadius={100} innerRadius={58} paddingAngle={3}>
-                        {spendingByCategory.map((entry, index) => <Cell key={entry.name} fill={chartColors[index % chartColors.length]} />)}
-                      </Pie>
-                      <Tooltip formatter={(value) => money(value, currency)} />
-                    </PieChart>
-                  </ResponsiveContainer>
+                <div style={{ display: "flex", gap: 16, alignItems: "center", flexWrap: "wrap" }}>
+                  <div style={{ flex: "1 1 180px", minWidth: 160 }}>
+                    {spendingByCategory.length === 0
+                      ? <div style={{ color: s.textMuted, fontSize: 14 }}>Keine Ausgaben</div>
+                      : spendingByCategory.map((entry, index) => (
+                        <div key={entry.name} style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 8, padding: "7px 0", borderBottom: `1px solid ${s.border}` }}>
+                          <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+                            <div style={{ width: 10, height: 10, borderRadius: "50%", background: chartColors[index % chartColors.length], flexShrink: 0 }} />
+                            <span style={{ fontSize: 13, color: s.text }}>{entry.name}</span>
+                          </div>
+                          <span style={{ fontSize: 13, fontWeight: 700, color: s.text }}>{money(entry.value, currency)}</span>
+                        </div>
+                      ))
+                    }
+                  </div>
+                  <div style={{ flex: "0 0 220px", height: 220 }}>
+                    <ResponsiveContainer width="100%" height="100%">
+                      <PieChart>
+                        <Pie data={spendingByCategory} dataKey="value" nameKey="name" outerRadius={90} innerRadius={50} paddingAngle={3}>
+                          {spendingByCategory.map((entry, index) => <Cell key={entry.name} fill={chartColors[index % chartColors.length]} />)}
+                        </Pie>
+                        <Tooltip formatter={(value) => money(value, currency)} />
+                      </PieChart>
+                    </ResponsiveContainer>
+                  </div>
                 </div>
               </div>
 
@@ -1730,7 +1746,7 @@ function toggleVersion(version) {
 
             <div style={{ display: "grid", gap: 10, marginTop: 14 }}>
               {versionHistory.map((entry, index) => (
-                <div key={entry.version} style={{ background: "white", border: "1px solid #dbeafe", borderRadius: 16, padding: 14 }}>
+                <div key={entry.version} style={{ background: s.surface, border: `1px solid ${s.border}`, borderRadius: 16, padding: 14 }}>
                   <button style={{ ...s.buttonSecondary, width: "100%", justifyContent: "space-between", whiteSpace: "normal", height: "auto", padding: "10px 14px", textAlign: "left" }} onClick={() => toggleVersion(entry.version)}>
                     <span>{entry.version} – {entry.name}</span>
                     <span>{openVersions[entry.version] ? "▲" : "▼"}</span>
