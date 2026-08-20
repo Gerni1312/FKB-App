@@ -1638,7 +1638,7 @@ function toggleVersion(version) {
                     : { border: `1px solid ${darkMode ? "rgba(255,255,255,0.1)" : "#e4e4e7"}`, background: darkMode ? "rgba(255,255,255,0.07)" : "white" };
                   return (
                     <button key={cell.date} onClick={() => setSelectedCalendarDay(cell)} style={{ minHeight: 92, borderRadius: 18, padding: 10, border: tone.border, background: tone.background, textAlign: "left", cursor: "pointer" }}>
-                      <div style={{ display: "flex", justifyContent: "space-between", gap: 8 }}><div style={{ fontWeight: 800 }}>{cell.day}</div>{cell.transactions.length > 0 ? <span style={{ ...s.badge, fontSize: 10, padding: "4px 8px" }}>{cell.transactions.length}</span> : null}</div>
+                      <div style={{ display: "flex", justifyContent: "space-between", gap: 8 }}><div style={{ fontWeight: 800, color: s.text }}>{cell.day}</div>{cell.transactions.length > 0 ? <span style={{ ...s.badge, fontSize: 10, padding: "4px 8px" }}>{cell.transactions.length}</span> : null}</div>
                       <div style={{ marginTop: 8, fontSize: 11, lineHeight: 1.4 }}>
                         <div style={{ color: cell.income > 0 ? "#15803d" : "#a1a1aa" }}>{cell.income > 0 ? `+ ${money(cell.income, currency)}` : "—"}</div>
                         <div style={{ color: cell.expenses > 0 ? "#be123c" : "#a1a1aa" }}>{cell.expenses > 0 ? `- ${money(cell.expenses, currency)}` : "—"}</div>
