@@ -439,11 +439,11 @@ function getGoalProgress(goal) {
   return Math.min((goal.current / goal.target) * 100, 100);
 }
 
-function getBudgetStatus(progress) {
-  if (progress >= 100) return { label: "Überschritten", color: "#be123c", bg: "#fff1f2", border: "#fecdd3" };
-  if (progress >= 90) return { label: "Fast leer", color: "#be123c", bg: "#fff1f2", border: "#fecdd3" };
-  if (progress >= 75) return { label: "Achtung", color: "#b45309", bg: "#fffbeb", border: "#fde68a" };
-  return { label: "Stabil", color: "#15803d", bg: "#f0fdf4", border: "#bbf7d0" };
+function getBudgetStatus(progress, dark = false) {
+  if (progress >= 100) return { label: "Überschritten", color: dark ? "#fca5a5" : "#be123c", bg: dark ? "rgba(220,38,38,0.12)" : "#fff1f2", border: dark ? "rgba(220,38,38,0.25)" : "#fecdd3" };
+  if (progress >= 90)  return { label: "Fast leer",     color: dark ? "#fca5a5" : "#be123c", bg: dark ? "rgba(220,38,38,0.12)" : "#fff1f2", border: dark ? "rgba(220,38,38,0.25)" : "#fecdd3" };
+  if (progress >= 75)  return { label: "Achtung",       color: dark ? "#fcd34d" : "#b45309", bg: dark ? "rgba(202,138,4,0.12)"  : "#fffbeb", border: dark ? "rgba(202,138,4,0.25)"  : "#fde68a" };
+  return                      { label: "Stabil",        color: dark ? "#86efac" : "#15803d", bg: dark ? "rgba(22,163,74,0.12)"  : "#f0fdf4", border: dark ? "rgba(22,163,74,0.25)"  : "#bbf7d0" };
 }
 
 function downloadJson(filename, data) {
@@ -859,8 +859,8 @@ const [openVersions, setOpenVersions] = useState({
   const budgetsWithSpent = useMemo(() => budgets.map((b) => {
     const spent = getBudgetSpentForRange(transactions, b, monthOffset, payday);
     const progress = b.limit > 0 ? Math.min((spent / b.limit) * 100, 100) : 0;
-    return { ...b, spent, remaining: b.limit - spent, progress, status: getBudgetStatus(progress) };
-  }), [budgets, transactions, monthOffset, payday]);
+    return { ...b, spent, remaining: b.limit - spent, progress, status: getBudgetStatus(progress, darkMode) };
+  }), [budgets, transactions, monthOffset, payday, darkMode]);
 
   const dangerBudgets = useMemo(() => budgetsWithSpent.filter((b) => b.progress >= 75), [budgetsWithSpent]);
 
@@ -876,12 +876,12 @@ const [openVersions, setOpenVersions] = useState({
     const actual = totals.saving;
     const progress = goal > 0 ? Math.min((actual / goal) * 100, 999) : 0;
     let label, color, bg, border;
-    if (progress >= 100) { label = "Ziel erreicht 🎉"; color = "#b45309"; bg = "#fffbeb"; border = "#fde68a"; }
-    else if (progress >= 75) { label = "Fast erreicht"; color = "#1d4ed8"; bg = "#eff6ff"; border = "#bfdbfe"; }
-    else if (progress >= 25) { label = "Auf Kurs"; color = "#15803d"; bg = "#f0fdf4"; border = "#bbf7d0"; }
-    else { label = "Noch am Start"; color = "#71717a"; bg = "#fafafa"; border = "#e4e4e7"; }
+    if (progress >= 100) { label = "Ziel erreicht 🎉"; color = darkMode ? "#fcd34d" : "#b45309"; bg = darkMode ? "rgba(202,138,4,0.12)" : "#fffbeb"; border = darkMode ? "rgba(202,138,4,0.25)" : "#fde68a"; }
+    else if (progress >= 75) { label = "Fast erreicht"; color = darkMode ? "#93c5fd" : "#1d4ed8"; bg = darkMode ? "rgba(29,78,216,0.12)" : "#eff6ff"; border = darkMode ? "rgba(29,78,216,0.25)" : "#bfdbfe"; }
+    else if (progress >= 25) { label = "Auf Kurs"; color = darkMode ? "#86efac" : "#15803d"; bg = darkMode ? "rgba(22,163,74,0.12)" : "#f0fdf4"; border = darkMode ? "rgba(22,163,74,0.25)" : "#bbf7d0"; }
+    else { label = "Noch am Start"; color = darkMode ? "#a1a1aa" : "#71717a"; bg = darkMode ? "rgba(255,255,255,0.05)" : "#fafafa"; border = darkMode ? "rgba(255,255,255,0.09)" : "#e4e4e7"; }
     return { goal, actual, progress, label, color, bg, border };
-  }, [savingsAccount.plannedMonthlyDeposit, totals.saving]);
+  }, [savingsAccount.plannedMonthlyDeposit, totals.saving, darkMode]);
 
   const filteredTransactions = useMemo(() => monthTransactions
     .filter((t) => (filterBucket === "all" ? true : t.bucket === filterBucket))
@@ -1213,9 +1213,9 @@ function toggleVersion(version) {
         {tab === "dashboard" && (
           <>
             {dangerBudgets.length > 0 && (
-              <div style={{ ...s.card, background: "#fffbeb", border: "1px solid #fde68a", padding: 16, marginBottom: 16 }}>
+              <div style={{ ...s.card, background: darkMode ? "rgba(202,138,4,0.12)" : "#fffbeb", border: `1px solid ${darkMode ? "rgba(202,138,4,0.25)" : "#fde68a"}`, padding: 16, marginBottom: 16 }}>
                 <div style={{ display: "flex", gap: 12, alignItems: "flex-start" }}>
-                  <AlertTriangle size={18} color="#b45309" style={{ marginTop: 2 }} />
+                  <AlertTriangle size={18} color={darkMode ? "#fcd34d" : "#b45309"} style={{ marginTop: 2 }} />
                   <div>
                     <div style={{ fontWeight: 800, color: "#92400e" }}>Budget-Warnung</div>
                     <div style={{ fontSize: 14, color: "#92400e", marginTop: 4 }}>{dangerBudgets.length} Budget{dangerBudgets.length > 1 ? "s" : ""} sind fast leer oder überschritten.</div>
@@ -1267,8 +1267,8 @@ function toggleVersion(version) {
                   <div style={s.softCard}><div style={{ color: "#71717a", fontSize: 14 }}>Restquote</div><div style={{ fontSize: 28, fontWeight: 900, marginTop: 8 }}>{money(totals.remaining, currency)}</div><div style={{ fontSize: 12, color: "#71717a", marginTop: 4 }}>{percentages.remainingPct.toFixed(0)}% frei</div><ProgressBar value={percentages.remainingPct} color="#22c55e" dark={darkMode} /></div>
                 </div>
                 <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(240px,1fr))", gap: 12, marginTop: 16 }}>
-                  <div style={{ ...s.softCard, background: "#ecfdf5", borderColor: "#bbf7d0" }}><div style={{ color: "#15803d", fontSize: 14 }}>Monatlich frei verfügbar</div><div style={{ fontSize: 34, fontWeight: 900, marginTop: 8 }}>{money(monthlyPlan.monthlyFlex, currency)}</div></div>
-                  <div style={{ ...s.softCard, background: "#eff6ff", borderColor: "#bfdbfe" }}><div style={{ color: "#1d4ed8", fontSize: 14 }}>Empfohlenes {weeklyMode ? "Wochen" : "Tages"}budget</div><div style={{ fontSize: 34, fontWeight: 900, marginTop: 8 }}>{money(weeklyMode ? monthlyPlan.weeklyFlex : monthlyPlan.dailyFlex, currency)}</div></div>
+                  <div style={{ ...s.softCard, background: darkMode ? "rgba(22,163,74,0.12)" : "#ecfdf5", borderColor: darkMode ? "rgba(22,163,74,0.25)" : "#bbf7d0" }}><div style={{ color: darkMode ? "#86efac" : "#15803d", fontSize: 14 }}>Monatlich frei verfügbar</div><div style={{ fontSize: 34, fontWeight: 900, marginTop: 8 }}>{money(monthlyPlan.monthlyFlex, currency)}</div></div>
+                  <div style={{ ...s.softCard, background: darkMode ? "rgba(29,78,216,0.12)" : "#eff6ff", borderColor: darkMode ? "rgba(29,78,216,0.25)" : "#bfdbfe" }}><div style={{ color: darkMode ? "#93c5fd" : "#1d4ed8", fontSize: 14 }}>Empfohlenes {weeklyMode ? "Wochen" : "Tages"}budget</div><div style={{ fontSize: 34, fontWeight: 900, marginTop: 8 }}>{money(weeklyMode ? monthlyPlan.weeklyFlex : monthlyPlan.dailyFlex, currency)}</div></div>
                 </div>
               </div>
 
@@ -1346,9 +1346,9 @@ function toggleVersion(version) {
               <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", gap: 12, flexWrap: "wrap", marginBottom: 12 }}>
                 <div>
                   <div style={{ fontSize: 28, fontWeight: 900, color: savingPlanStatus.color }}>{money(savingPlanStatus.actual, currency)}</div>
-                  <div style={{ fontSize: 14, color: "#52525b", marginTop: 4 }}>von {money(savingPlanStatus.goal, currency)} Sparziel diesen Monat</div>
+                  <div style={{ fontSize: 14, color: s.textMuted, marginTop: 4 }}>von {money(savingPlanStatus.goal, currency)} Sparziel diesen Monat</div>
                 </div>
-                <span style={{ ...s.badge, color: savingPlanStatus.color, borderColor: savingPlanStatus.border, background: "white", fontSize: 14, padding: "8px 14px" }}>{savingPlanStatus.label}</span>
+                <span style={{ ...s.badge, color: savingPlanStatus.color, borderColor: savingPlanStatus.border, background: savingPlanStatus.bg, fontSize: 14, padding: "8px 14px" }}>{savingPlanStatus.label}</span>
               </div>
               <ProgressBar value={savingPlanStatus.progress} color={savingPlanStatus.color} dark={darkMode} />
               {savingPlanStatus.goal === 0 && (
@@ -1608,7 +1608,7 @@ function toggleVersion(version) {
                     <ProgressBar value={progress} color="#16a34a" dark={darkMode} />
                     <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12, marginTop: 12 }}>
                       <input style={s.input} type="number" value={goal.current} onChange={(e) => updateGoalCurrent(goal.id, e.target.value)} />
-                      <div style={{ ...s.softCard, background: "#ecfdf5", borderColor: "#bbf7d0" }}><div style={{ color: "#15803d", fontSize: 13 }}>Noch nötig</div><div style={{ fontWeight: 800, marginTop: 5 }}>{money(Math.max(goal.target - goal.current, 0), currency)}</div></div>
+                      <div style={{ ...s.softCard, background: darkMode ? "rgba(22,163,74,0.12)" : "#ecfdf5", borderColor: darkMode ? "rgba(22,163,74,0.25)" : "#bbf7d0" }}><div style={{ color: darkMode ? "#86efac" : "#15803d", fontSize: 13 }}>Noch nötig</div><div style={{ fontWeight: 800, marginTop: 5 }}>{money(Math.max(goal.target - goal.current, 0), currency)}</div></div>
                     </div>
                     <div style={{ display: "grid", gridTemplateColumns: "1fr auto", gap: 12, marginTop: 12 }}>
                       <input style={s.input} type="number" placeholder="Beitrag" value={goalContribution[goal.id] || ""} onChange={(e) => setGoalContribution((prev) => ({ ...prev, [goal.id]: e.target.value }))} />
@@ -1630,8 +1630,12 @@ function toggleVersion(version) {
               </div>
               <div style={{ display: "grid", gridTemplateColumns: "repeat(7,1fr)", gap: 8 }}>
                 {calendarCells.map((cell, index) => {
-                  if (!cell) return <div key={index} style={{ minHeight: 92, borderRadius: 18, background: "#e4e4e7" }} />;
-                  const tone = cell.net < 0 ? { border: "1px solid #fecdd3", background: "#fff1f2" } : cell.income > 0 ? { border: "1px solid #bbf7d0", background: "#f0fdf4" } : { border: "1px solid #e4e4e7", background: "white" };
+                  if (!cell) return <div key={index} style={{ minHeight: 92, borderRadius: 18, background: darkMode ? "rgba(255,255,255,0.05)" : "#e4e4e7" }} />;
+                  const tone = cell.net < 0
+                    ? { border: `1px solid ${darkMode ? "rgba(220,38,38,0.3)" : "#fecdd3"}`, background: darkMode ? "rgba(220,38,38,0.1)" : "#fff1f2" }
+                    : cell.income > 0
+                    ? { border: `1px solid ${darkMode ? "rgba(22,163,74,0.3)" : "#bbf7d0"}`, background: darkMode ? "rgba(22,163,74,0.1)" : "#f0fdf4" }
+                    : { border: `1px solid ${darkMode ? "rgba(255,255,255,0.08)" : "#e4e4e7"}`, background: darkMode ? "rgba(255,255,255,0.03)" : "white" };
                   return (
                     <button key={cell.date} onClick={() => setSelectedCalendarDay(cell)} style={{ minHeight: 92, borderRadius: 18, padding: 10, border: tone.border, background: tone.background, textAlign: "left", cursor: "pointer" }}>
                       <div style={{ display: "flex", justifyContent: "space-between", gap: 8 }}><div style={{ fontWeight: 800 }}>{cell.day}</div>{cell.transactions.length > 0 ? <span style={{ ...s.badge, fontSize: 10, padding: "4px 8px" }}>{cell.transactions.length}</span> : null}</div>
@@ -1649,9 +1653,9 @@ function toggleVersion(version) {
               <div style={{ ...s.card, padding: 18 }}>
                 <SectionTitle title={selectedCalendarDay.date} description={`${selectedCalendarDay.transactions.length} Buchung${selectedCalendarDay.transactions.length !== 1 ? "en" : ""} an diesem Tag`} />
                 <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(160px,1fr))", gap: 12 }}>
-                  <div style={{ ...s.softCard, background: "#ecfdf5", borderColor: "#bbf7d0" }}><div style={{ color: "#15803d", fontSize: 13 }}>Einnahmen</div><div style={{ fontWeight: 900, marginTop: 6 }}>{money(selectedCalendarDay.income, currency)}</div></div>
-                  <div style={{ ...s.softCard, background: "#fff1f2", borderColor: "#fecdd3" }}><div style={{ color: "#be123c", fontSize: 13 }}>Ausgaben</div><div style={{ fontWeight: 900, marginTop: 6 }}>{money(selectedCalendarDay.expenses, currency)}</div></div>
-                  <div style={s.softCard}><div style={{ color: "#3f3f46", fontSize: 13 }}>Saldo</div><div style={{ fontWeight: 900, marginTop: 6 }}>{money(selectedCalendarDay.net, currency)}</div></div>
+                  <div style={{ ...s.softCard, background: darkMode ? "rgba(22,163,74,0.12)" : "#ecfdf5", borderColor: darkMode ? "rgba(22,163,74,0.25)" : "#bbf7d0" }}><div style={{ color: darkMode ? "#86efac" : "#15803d", fontSize: 13 }}>Einnahmen</div><div style={{ fontWeight: 900, marginTop: 6 }}>{money(selectedCalendarDay.income, currency)}</div></div>
+                  <div style={{ ...s.softCard, background: darkMode ? "rgba(220,38,38,0.12)" : "#fff1f2", borderColor: darkMode ? "rgba(220,38,38,0.25)" : "#fecdd3" }}><div style={{ color: darkMode ? "#fca5a5" : "#be123c", fontSize: 13 }}>Ausgaben</div><div style={{ fontWeight: 900, marginTop: 6 }}>{money(selectedCalendarDay.expenses, currency)}</div></div>
+                  <div style={s.softCard}><div style={{ color: s.textMuted, fontSize: 13 }}>Saldo</div><div style={{ fontWeight: 900, marginTop: 6 }}>{money(selectedCalendarDay.net, currency)}</div></div>
                 </div>
                 <div style={{ display: "grid", gap: 12, marginTop: 14 }}>
                   {selectedCalendarDay.transactions.map((t) => (
@@ -1707,10 +1711,10 @@ function toggleVersion(version) {
             <div style={{ ...s.card, padding: 18 }}>
               <SectionTitle title="Smarte Hinweise" description="Kleine Analyse, damit du besser sparen kannst" />
               <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(220px,1fr))", gap: 12 }}>
-                <div style={{ ...s.softCard, background: "#fffbeb", borderColor: "#fde68a" }}><div style={{ fontWeight: 800 }}>Variable Ausgaben im Blick behalten</div><div style={{ fontSize: 14, color: "#52525b", marginTop: 6 }}>Du hast im gewählten Monat {money(totals.flex, currency)} flexibel ausgegeben.</div></div>
-                <div style={{ ...s.softCard, background: "#eff6ff", borderColor: "#bfdbfe" }}><div style={{ fontWeight: 800 }}>Monatswechsel aktiv</div><div style={{ fontSize: 14, color: "#52525b", marginTop: 6 }}>Budgets und Zahlen werden pro Monat getrennt angezeigt.</div></div>
-                <div style={{ ...s.softCard, background: "#ecfdf5", borderColor: "#bbf7d0" }}><div style={{ fontWeight: 800 }}>Sparkonto-Prognose</div><div style={{ fontSize: 14, color: "#52525b", marginTop: 6 }}>Wenn alles zurückkommt, liegst du bei {money(savingsSummary.projectedNextMonth, currency)}.</div></div>
-                <div style={{ ...s.softCard, background: "#f5f3ff", borderColor: "#ddd6fe" }}><div style={{ fontWeight: 800 }}>{weeklyMode ? "Wochenbudget" : "Tagesbudget"}</div><div style={{ fontSize: 14, color: "#52525b", marginTop: 6 }}>Empfohlen: {money(weeklyMode ? monthlyPlan.weeklyFlex : monthlyPlan.dailyFlex, currency)}.</div></div>
+                <div style={{ ...s.softCard, background: darkMode ? "rgba(202,138,4,0.12)" : "#fffbeb", borderColor: darkMode ? "rgba(202,138,4,0.25)" : "#fde68a" }}><div style={{ fontWeight: 800 }}>Variable Ausgaben im Blick behalten</div><div style={{ fontSize: 14, color: s.textMuted, marginTop: 6 }}>Du hast im gewählten Monat {money(totals.flex, currency)} flexibel ausgegeben.</div></div>
+                <div style={{ ...s.softCard, background: darkMode ? "rgba(29,78,216,0.12)" : "#eff6ff", borderColor: darkMode ? "rgba(29,78,216,0.25)" : "#bfdbfe" }}><div style={{ fontWeight: 800 }}>Monatswechsel aktiv</div><div style={{ fontSize: 14, color: s.textMuted, marginTop: 6 }}>Budgets und Zahlen werden pro Monat getrennt angezeigt.</div></div>
+                <div style={{ ...s.softCard, background: darkMode ? "rgba(22,163,74,0.12)" : "#ecfdf5", borderColor: darkMode ? "rgba(22,163,74,0.25)" : "#bbf7d0" }}><div style={{ fontWeight: 800 }}>Sparkonto-Prognose</div><div style={{ fontSize: 14, color: s.textMuted, marginTop: 6 }}>Wenn alles zurückkommt, liegst du bei {money(savingsSummary.projectedNextMonth, currency)}.</div></div>
+                <div style={{ ...s.softCard, background: darkMode ? "rgba(124,58,237,0.12)" : "#f5f3ff", borderColor: darkMode ? "rgba(124,58,237,0.25)" : "#ddd6fe" }}><div style={{ fontWeight: 800 }}>{weeklyMode ? "Wochenbudget" : "Tagesbudget"}</div><div style={{ fontSize: 14, color: s.textMuted, marginTop: 6 }}>Empfohlen: {money(weeklyMode ? monthlyPlan.weeklyFlex : monthlyPlan.dailyFlex, currency)}.</div></div>
               </div>
             </div>
           </div>
