@@ -63,6 +63,22 @@ const chartColors = ["#22c55e", "#f59e0b", "#ef4444", "#0ea5e9", "#8b5cf6", "#14
   const mobileOnly = typeof window !== "undefined" && window.innerWidth < 640;
   const versionHistory = [
     {
+      version: "v3.4",
+      name: "Dark Mode & Redesign",
+      date: "2026-08-20",
+      notes: [
+        {
+          title: "Design",
+          items: [
+            "Komplettes Redesign: cleaner, moderner Look mit klarem Farb-System.",
+            "Dark Mode: In den Einstellungen zwischen Hell und Dunkel wechseln.",
+            "Neue Top-Navigation auf Desktop — übersichtlicher als Tab-Leiste.",
+            "Farben, Abstände und Typografie komplett überarbeitet.",
+          ],
+        },
+      ],
+    },
+    {
       version: "v3.3",
       name: "Jährliche Fixkosten",
       date: "2026-06-09",
@@ -349,7 +365,7 @@ const seedData = {
   ],
   mainAccount: { balance: 220 },
   savingsAccount: { balance: 400, plannedMonthlyDeposit: 150, borrowedOut: 80, expectedInterest: 2 },
-  settings: { currency: "CHF", weeklyMode: true, monthOffset: 0, payday: 25 },
+  settings: { currency: "CHF", weeklyMode: true, monthOffset: 0, payday: 25, darkMode: false },
 };
 
 function money(value, currency = "CHF") {
@@ -463,13 +479,33 @@ function buildCalendar(monthDate, transactions) {
   return cells;
 }
 
-function styles() {
-  const mobile = typeof window !== "undefined" && window.innerWidth < 640;
+function styles(dark = false, mobile = false) {
+  const c = {
+    bg:           dark ? "#111113"                    : "#f4f4f5",
+    surface:      dark ? "#1c1c1f"                    : "#ffffff",
+    surfaceAlt:   dark ? "#242428"                    : "#f9f9fb",
+    border:       dark ? "rgba(255,255,255,0.09)"     : "#e4e4e7",
+    borderSubtle: dark ? "rgba(255,255,255,0.05)"     : "rgba(0,0,0,0.04)",
+    text:         dark ? "#f4f4f5"                    : "#18181b",
+    textMuted:    dark ? "#a1a1aa"                    : "#71717a",
+    textSubtle:   dark ? "#71717a"                    : "#52525b",
+    inputBg:      dark ? "#2a2a2e"                    : "#ffffff",
+    inputBorder:  dark ? "rgba(255,255,255,0.12)"     : "#d4d4d8",
+    btnSecBg:     dark ? "#2a2a2e"                    : "#ffffff",
+    btnSecBorder: dark ? "rgba(255,255,255,0.12)"     : "#d4d4d8",
+    shadow:       dark ? "0 8px 28px rgba(0,0,0,0.5)": "0 4px 16px rgba(0,0,0,0.06)",
+    navBg:        dark ? "#1c1c1f"                    : "#ffffff",
+    navBorder:    dark ? "rgba(255,255,255,0.07)"     : "#e4e4e7",
+    progressBg:   dark ? "rgba(255,255,255,0.1)"      : "#e4e4e7",
+  };
   return {
+    // Color tokens exposed for inline styles
+    bg: c.bg, surface: c.surface, surfaceAlt: c.surfaceAlt,
+    border: c.border, text: c.text, textMuted: c.textMuted, textSubtle: c.textSubtle, btnSecBg: c.btnSecBg,
     app: {
       minHeight: "100vh",
-      background: "#f4f4f5",
-      color: "#18181b",
+      background: c.bg,
+      color: c.text,
       fontFamily: "Inter, system-ui, sans-serif",
     },
     container: {
@@ -477,24 +513,49 @@ function styles() {
       margin: "0 auto",
       padding: mobile ? "12px 12px 96px" : "16px 16px 96px",
     },
+    topNav: {
+      background: c.navBg,
+      borderBottom: `1px solid ${c.navBorder}`,
+      position: "sticky",
+      top: 0,
+      zIndex: 40,
+      boxShadow: dark ? "0 1px 12px rgba(0,0,0,0.4)" : "0 1px 8px rgba(0,0,0,0.05)",
+    },
+    topNavInner: {
+      maxWidth: 1400,
+      margin: "0 auto",
+      padding: mobile ? "0 12px" : "0 16px",
+      display: "flex",
+      alignItems: "center",
+      gap: 8,
+      height: 56,
+    },
+    topNavLogo: {
+      fontSize: 13,
+      fontWeight: 800,
+      letterSpacing: 2,
+      textTransform: "uppercase",
+      color: c.text,
+      marginRight: 16,
+      whiteSpace: "nowrap",
+    },
     hero: {
       background: "linear-gradient(135deg, #09090b, #18181b 55%, #27272a)",
       color: "white",
-      borderRadius: 28,
-      padding: 24,
-      boxShadow: "0 20px 50px rgba(0,0,0,0.25)",
+      borderRadius: 20,
+      padding: mobile ? 20 : 28,
       overflow: "hidden",
     },
     card: {
-      background: "white",
-      borderRadius: 24,
-      boxShadow: "0 8px 28px rgba(0,0,0,0.06)",
-      border: "1px solid rgba(0,0,0,0.04)",
+      background: c.surface,
+      borderRadius: 18,
+      boxShadow: c.shadow,
+      border: `1px solid ${c.borderSubtle}`,
     },
     softCard: {
-      background: "#fafafa",
-      borderRadius: 20,
-      border: "1px solid #e4e4e7",
+      background: c.surfaceAlt,
+      borderRadius: 14,
+      border: `1px solid ${c.border}`,
       padding: mobile ? 12 : 16,
       minWidth: 0,
       overflowWrap: "anywhere",
@@ -502,17 +563,18 @@ function styles() {
     input: {
       width: "100%",
       height: 44,
-      borderRadius: 16,
-      border: "1px solid #d4d4d8",
+      borderRadius: 12,
+      border: `1px solid ${c.inputBorder}`,
       padding: "0 14px",
-      background: "white",
+      background: c.inputBg,
+      color: c.text,
       fontSize: 14,
       boxSizing: "border-box",
       minWidth: 0,
     },
     button: {
       height: 44,
-      borderRadius: 16,
+      borderRadius: 12,
       border: "none",
       padding: mobile ? "0 12px" : "0 16px",
       background: "#18181b",
@@ -528,11 +590,11 @@ function styles() {
     },
     buttonSecondary: {
       height: 44,
-      borderRadius: 16,
-      border: "1px solid #d4d4d8",
+      borderRadius: 12,
+      border: `1px solid ${c.btnSecBorder}`,
       padding: mobile ? "0 12px" : "0 16px",
-      background: "white",
-      color: "#18181b",
+      background: c.btnSecBg,
+      color: c.text,
       fontWeight: 600,
       cursor: "pointer",
       display: "inline-flex",
@@ -550,40 +612,33 @@ function styles() {
       borderRadius: 999,
       fontSize: 12,
       fontWeight: 700,
-      border: "1px solid #e4e4e7",
-      background: "white",
-    },
-    tabs: {
-      display: "grid",
-      gridTemplateColumns: "repeat(auto-fit, minmax(120px, 1fr))",
-      gap: 8,
-      background: "white",
-      padding: 8,
-      borderRadius: 24,
-      boxShadow: "0 6px 20px rgba(0,0,0,0.05)",
-      marginTop: 20,
-      marginBottom: 20,
+      border: `1px solid ${c.border}`,
+      background: c.surfaceAlt,
+      color: c.text,
     },
     tabButton: {
-      minHeight: 48,
-      borderRadius: 16,
+      minHeight: 44,
+      borderRadius: 10,
       border: "none",
       background: "transparent",
       cursor: "pointer",
-      fontWeight: 700,
+      fontWeight: 600,
+      fontSize: 13,
       display: "inline-flex",
       alignItems: "center",
       justifyContent: "center",
-      gap: 8,
-      padding: "0 10px",
+      gap: 6,
+      padding: "0 12px",
+      color: c.textMuted,
+      whiteSpace: "nowrap",
     },
     bottomNav: {
       position: "fixed",
       left: 0,
       right: 0,
       bottom: 0,
-      background: "#ffffff",
-      borderTop: "1px solid #e4e4e7",
+      background: c.navBg,
+      borderTop: `1px solid ${c.navBorder}`,
       padding: 10,
       zIndex: 50,
     },
@@ -601,8 +656,8 @@ function styles() {
     },
     progressWrap: {
       width: "100%",
-      height: 10,
-      background: "#e4e4e7",
+      height: 8,
+      background: c.progressBg,
       borderRadius: 999,
       overflow: "hidden",
       marginTop: 10,
@@ -610,9 +665,9 @@ function styles() {
   };
 }
 
-function ProgressBar({ value, color = "#18181b" }) {
+function ProgressBar({ value, color = "#18181b", dark = false }) {
   return (
-    <div style={styles().progressWrap}>
+    <div style={styles(dark).progressWrap}>
       <div style={{ width: `${Math.min(value, 100)}%`, height: "100%", background: color, borderRadius: 999 }} />
     </div>
   );
@@ -651,7 +706,6 @@ function StatCard({ title, value, subValue, hint, icon: Icon, gradient }) {
 }
 
 function App() {
-  const s = styles();
   const fileInputRef = useRef(null);
   const [transactions, setTransactions] = useState(seedData.transactions);
   const [budgets, setBudgets] = useState(seedData.budgets);
@@ -671,6 +725,8 @@ function App() {
   const [showAddTransaction, setShowAddTransaction] = useState(false);
 
   const [payday, setPayday] = useState(seedData.settings.payday);
+  const [darkMode, setDarkMode] = useState(seedData.settings.darkMode);
+  const s = styles(darkMode, mobileOnly);
 
   const [newTransaction, setNewTransaction] = useState({ type: "expense", category: "Freizeit", amount: "", note: "", date: new Date().toISOString().slice(0, 10), bucket: "flex" });
   const [newBudget, setNewBudget] = useState({ name: "", limit: "", resetMode: "monthly" });
@@ -734,6 +790,7 @@ const [openVersions, setOpenVersions] = useState({
       if (typeof parsed.settings?.weeklyMode === "boolean") setWeeklyMode(parsed.settings.weeklyMode);
       if (typeof parsed.settings?.monthOffset === "number") setMonthOffset(parsed.settings.monthOffset);
       if (typeof parsed.settings?.payday === "number") setPayday(parsed.settings.payday);
+      if (typeof parsed.settings?.darkMode === "boolean") setDarkMode(parsed.settings.darkMode);
     } catch (error) {
       console.error(error);
     }
@@ -747,9 +804,9 @@ const [openVersions, setOpenVersions] = useState({
       goals,
       mainAccount,
       savingsAccount,
-      settings: { currency, weeklyMode, monthOffset, payday },
+      settings: { currency, weeklyMode, monthOffset, payday, darkMode },
     }));
-  }, [transactions, budgets, recurring, goals, mainAccount, savingsAccount, currency, weeklyMode, monthOffset, payday]);
+  }, [transactions, budgets, recurring, goals, mainAccount, savingsAccount, currency, weeklyMode, monthOffset, payday, darkMode]);
 
   useEffect(() => {
     // Nur Einträge die wirklich dran sind (jährliche nur im richtigen Monat)
@@ -995,7 +1052,7 @@ const [openVersions, setOpenVersions] = useState({
   }
 
   function exportData() {
-    downloadJson(`sigma-finance-${selectedMonthKey}.json`, { exportedAt: new Date().toISOString(), version: 2, transactions, budgets, recurring, goals, mainAccount, savingsAccount, settings: { currency, weeklyMode, monthOffset } });
+    downloadJson(`sigma-finance-${selectedMonthKey}.json`, { exportedAt: new Date().toISOString(), version: 2, transactions, budgets, recurring, goals, mainAccount, savingsAccount, settings: { currency, weeklyMode, monthOffset, payday, darkMode } });
   }
 
   function handleImport(event) {
@@ -1052,17 +1109,32 @@ function toggleVersion(version) {
 
   const monthNames = ["Januar", "Februar", "März", "April", "Mai", "Juni", "Juli", "August", "September", "Oktober", "November", "Dezember"];
 
-  const tabButtonStyle = (active) => ({
-    ...s.tabButton,
-    background: active ? "#18181b" : "transparent",
-    color: active ? "white" : "#18181b",
-  });
-
 
 
 
   return (
     <div style={s.app}>
+      {!mobileOnly && (
+        <div style={s.topNav}>
+          <div style={s.topNavInner}>
+            <div style={s.topNavLogo}>FKB</div>
+            {[
+              ["dashboard", Home, "Dashboard"],
+              ["transactions", CreditCard, "Buchungen"],
+              ["budgets", Target, "Budgets"],
+              ["goals", Trophy, "Ziele"],
+              ["calendar", Calendar, "Kalender"],
+              ["analysis", BarChart3, "Analyse"],
+              ["settings", Settings, "Settings"],
+            ].map(([id, Icon, label]) => (
+              <button key={id} onClick={() => setTab(id)} style={{ ...s.tabButton, background: tab === id ? (darkMode ? "rgba(255,255,255,0.1)" : "#f4f4f5") : "transparent", color: tab === id ? s.text : s.textMuted, fontWeight: tab === id ? 700 : 500 }}>
+                <Icon size={15} /> {label}
+              </button>
+            ))}
+          </div>
+        </div>
+      )}
+
       <div style={s.container}>
         <div style={s.hero}>
           <div style={{ display: "flex", justifyContent: "space-between", gap: 16, flexWrap: "wrap", alignItems: "center" }}>
@@ -1137,21 +1209,6 @@ function toggleVersion(version) {
           </div>
         )}
 
-        {!mobileOnly && (
-          <div style={s.tabs}>
-            {[
-              ["dashboard", Home, "Dashboard"],
-              ["transactions", CreditCard, "Buchungen"],
-              ["budgets", Target, "Budgets"],
-              ["goals", Trophy, "Ziele"],
-              ["calendar", Calendar, "Kalender"],
-              ["analysis", BarChart3, "Analyse"],
-              ["settings", Settings, "Settings"],
-            ].map(([id, Icon, label]) => (
-              <button key={id} style={tabButtonStyle(tab === id)} onClick={() => setTab(id)}><Icon size={16} /> {label}</button>
-            ))}
-          </div>
-        )}
 
         {tab === "dashboard" && (
           <>
@@ -1204,10 +1261,10 @@ function toggleVersion(version) {
               <div style={{ ...s.card, padding: 18 }}>
                 <SectionTitle title="Besseres Dashboard" description="Direkte Prozentanzeige auf einen Blick" />
                 <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(180px, 1fr))", gap: 12 }}>
-                  <div style={s.softCard}><div style={{ color: "#71717a", fontSize: 14 }}>Fixkosten</div><div style={{ fontSize: 28, fontWeight: 900, marginTop: 8 }}>{money(totals.fixed, currency)}</div><div style={{ fontSize: 12, color: "#71717a", marginTop: 4 }}>{percentages.fixedPct.toFixed(0)}% vom Einkommen</div><ProgressBar value={percentages.fixedPct} color="#18181b" /></div>
-                  <div style={s.softCard}><div style={{ color: "#71717a", fontSize: 14 }}>Variabel</div><div style={{ fontSize: 28, fontWeight: 900, marginTop: 8 }}>{money(totals.flex, currency)}</div><div style={{ fontSize: 12, color: "#71717a", marginTop: 4 }}>{percentages.flexPct.toFixed(0)}% vom Einkommen</div><ProgressBar value={percentages.flexPct} color="#f59e0b" /></div>
-                  <div style={s.softCard}><div style={{ color: "#71717a", fontSize: 14 }}>Sparquote</div><div style={{ fontSize: 28, fontWeight: 900, marginTop: 8 }}>{money(totals.saving, currency)}</div><div style={{ fontSize: 12, color: "#71717a", marginTop: 4 }}>{percentages.savingPct.toFixed(0)}% vom Einkommen</div><ProgressBar value={percentages.savingPct} color="#0ea5e9" /></div>
-                  <div style={s.softCard}><div style={{ color: "#71717a", fontSize: 14 }}>Restquote</div><div style={{ fontSize: 28, fontWeight: 900, marginTop: 8 }}>{money(totals.remaining, currency)}</div><div style={{ fontSize: 12, color: "#71717a", marginTop: 4 }}>{percentages.remainingPct.toFixed(0)}% frei</div><ProgressBar value={percentages.remainingPct} color="#22c55e" /></div>
+                  <div style={s.softCard}><div style={{ color: "#71717a", fontSize: 14 }}>Fixkosten</div><div style={{ fontSize: 28, fontWeight: 900, marginTop: 8 }}>{money(totals.fixed, currency)}</div><div style={{ fontSize: 12, color: "#71717a", marginTop: 4 }}>{percentages.fixedPct.toFixed(0)}% vom Einkommen</div><ProgressBar value={percentages.fixedPct} color="#18181b" dark={darkMode} /></div>
+                  <div style={s.softCard}><div style={{ color: "#71717a", fontSize: 14 }}>Variabel</div><div style={{ fontSize: 28, fontWeight: 900, marginTop: 8 }}>{money(totals.flex, currency)}</div><div style={{ fontSize: 12, color: "#71717a", marginTop: 4 }}>{percentages.flexPct.toFixed(0)}% vom Einkommen</div><ProgressBar value={percentages.flexPct} color="#f59e0b" dark={darkMode} /></div>
+                  <div style={s.softCard}><div style={{ color: "#71717a", fontSize: 14 }}>Sparquote</div><div style={{ fontSize: 28, fontWeight: 900, marginTop: 8 }}>{money(totals.saving, currency)}</div><div style={{ fontSize: 12, color: "#71717a", marginTop: 4 }}>{percentages.savingPct.toFixed(0)}% vom Einkommen</div><ProgressBar value={percentages.savingPct} color="#0ea5e9" dark={darkMode} /></div>
+                  <div style={s.softCard}><div style={{ color: "#71717a", fontSize: 14 }}>Restquote</div><div style={{ fontSize: 28, fontWeight: 900, marginTop: 8 }}>{money(totals.remaining, currency)}</div><div style={{ fontSize: 12, color: "#71717a", marginTop: 4 }}>{percentages.remainingPct.toFixed(0)}% frei</div><ProgressBar value={percentages.remainingPct} color="#22c55e" dark={darkMode} /></div>
                 </div>
                 <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(240px,1fr))", gap: 12, marginTop: 16 }}>
                   <div style={{ ...s.softCard, background: "#ecfdf5", borderColor: "#bbf7d0" }}><div style={{ color: "#15803d", fontSize: 14 }}>Monatlich frei verfügbar</div><div style={{ fontSize: 34, fontWeight: 900, marginTop: 8 }}>{money(monthlyPlan.monthlyFlex, currency)}</div></div>
@@ -1227,7 +1284,7 @@ function toggleVersion(version) {
                         </div>
                         <span style={{ ...s.badge, color: budget.status.color, borderColor: budget.status.border }}>{budget.status.label}</span>
                       </div>
-                      <ProgressBar value={budget.progress} color={budget.status.color} />
+                      <ProgressBar value={budget.progress} color={budget.status.color} dark={darkMode} />
                       <div style={{ fontSize: 12, marginTop: 8, color: budget.status.color }}>Noch übrig: {money(budget.remaining, currency)}</div>
                     </div>
                   ))}
@@ -1293,7 +1350,7 @@ function toggleVersion(version) {
                 </div>
                 <span style={{ ...s.badge, color: savingPlanStatus.color, borderColor: savingPlanStatus.border, background: "white", fontSize: 14, padding: "8px 14px" }}>{savingPlanStatus.label}</span>
               </div>
-              <ProgressBar value={savingPlanStatus.progress} color={savingPlanStatus.color} />
+              <ProgressBar value={savingPlanStatus.progress} color={savingPlanStatus.color} dark={darkMode} />
               {savingPlanStatus.goal === 0 && (
                 <div style={{ fontSize: 13, color: "#71717a", marginTop: 10 }}>Kein monatliches Sparziel gesetzt. Trag es im Ziele-Tab unter "Konten" ein.</div>
               )}
@@ -1456,7 +1513,7 @@ function toggleVersion(version) {
                       <button style={{ ...s.buttonSecondary, width: 44, padding: 0 }} onClick={() => deleteBudget(budget.id)}><Trash2 size={16} /></button>
                     </div>
                   </div>
-                  <ProgressBar value={budget.progress} color={budget.status.color} />
+                  <ProgressBar value={budget.progress} color={budget.status.color} dark={darkMode} />
                   <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(110px,1fr))", gap: 10, marginTop: 14 }}>
                     <div style={s.softCard}><div style={{ color: "#71717a", fontSize: 13 }}>Limit</div><div style={{ fontWeight: 800, marginTop: 5 }}>{money(budget.limit, currency)}</div></div>
                     <div style={s.softCard}><div style={{ color: "#71717a", fontSize: 13 }}>Ausgegeben</div><div style={{ fontWeight: 800, marginTop: 5 }}>{money(budget.spent, currency)}</div></div>
@@ -1548,7 +1605,7 @@ function toggleVersion(version) {
                       </div>
                       <button style={{ ...s.buttonSecondary, width: 44, padding: 0 }} onClick={() => deleteGoal(goal.id)}><Trash2 size={16} /></button>
                     </div>
-                    <ProgressBar value={progress} color="#16a34a" />
+                    <ProgressBar value={progress} color="#16a34a" dark={darkMode} />
                     <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12, marginTop: 12 }}>
                       <input style={s.input} type="number" value={goal.current} onChange={(e) => updateGoalCurrent(goal.id, e.target.value)} />
                       <div style={{ ...s.softCard, background: "#ecfdf5", borderColor: "#bbf7d0" }}><div style={{ color: "#15803d", fontSize: 13 }}>Noch nötig</div><div style={{ fontWeight: 800, marginTop: 5 }}>{money(Math.max(goal.target - goal.current, 0), currency)}</div></div>
@@ -1702,16 +1759,29 @@ function toggleVersion(version) {
 
           <div style={{ display: "grid", gridTemplateColumns: mobileOnly ? "1fr" : "repeat(auto-fit, minmax(250px,1fr))", gap: 16, minWidth: 0 }}>
             <div style={s.softCard}>
-              <div style={{ fontWeight: 800 }}>Finanzmonat startet am</div>
-              <div style={{ fontSize: 14, color: "#71717a", marginTop: 4, marginBottom: 10 }}>
+              <div style={{ fontWeight: 800, color: s.text }}>Finanzmonat startet am</div>
+              <div style={{ fontSize: 14, color: s.textMuted, marginTop: 4, marginBottom: 10 }}>
                 Wähle den Tag, an dem dein Lohn kommt.
               </div>
-
               <select style={s.input} value={payday} onChange={(e) => setPayday(Number(e.target.value))}>
                 {Array.from({ length: 31 }, (_, i) => i + 1).map((day) => (
                   <option key={day} value={day}>{day}.</option>
                 ))}
               </select>
+            </div>
+            <div style={s.softCard}>
+              <div style={{ fontWeight: 800, color: s.text }}>Erscheinungsbild</div>
+              <div style={{ fontSize: 14, color: s.textMuted, marginTop: 4, marginBottom: 14 }}>
+                Wechsle zwischen hellem und dunklem Design.
+              </div>
+              <div style={{ display: "flex", gap: 8 }}>
+                <button onClick={() => setDarkMode(false)} style={{ ...s.buttonSecondary, flex: 1, justifyContent: "center", background: !darkMode ? "#18181b" : s.btnSecBg, color: !darkMode ? "white" : s.text, border: !darkMode ? "none" : `1px solid ${s.border}` }}>
+                  ☀️ Hell
+                </button>
+                <button onClick={() => setDarkMode(true)} style={{ ...s.buttonSecondary, flex: 1, justifyContent: "center", background: darkMode ? "#18181b" : s.btnSecBg, color: darkMode ? "white" : s.text, border: darkMode ? "none" : `1px solid ${s.border}` }}>
+                  🌙 Dunkel
+                </button>
+              </div>
             </div>
           </div>
         </div>

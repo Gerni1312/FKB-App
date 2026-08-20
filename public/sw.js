@@ -1,6 +1,6 @@
 // FKB Finance App — Service Worker
-// Version hier hochzählen wenn ein Update ausgeliefert werden soll: v3.3
-const CACHE_NAME = 'fkb-app-v3.3';
+// Version hier hochzählen wenn ein Update ausgeliefert werden soll: v3.4
+const CACHE_NAME = 'fkb-app-v3.4';
 
 self.addEventListener('install', (event) => {
   // Sofort aktivieren — kein Warten auf Tab-Schliessen
