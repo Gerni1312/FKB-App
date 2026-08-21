@@ -1100,6 +1100,20 @@ const [openVersions, setOpenVersions] = useState({
         if (parsed.settings?.currency) setCurrency(parsed.settings.currency);
         if (typeof parsed.settings?.weeklyMode === "boolean") setWeeklyMode(parsed.settings.weeklyMode);
         if (typeof parsed.settings?.monthOffset === "number") setMonthOffset(parsed.settings.monthOffset);
+        // Direkt in Firestore schreiben damit andere Geräte sofort sync bekommen
+        if (user) {
+          const data = {
+            transactions: parsed.transactions ?? [],
+            budgets: parsed.budgets ?? [],
+            recurring: parsed.recurring ?? [],
+            goals: parsed.goals ?? [],
+            mainAccount: parsed.mainAccount ?? seedData.mainAccount,
+            savingsAccount: parsed.savingsAccount ?? seedData.savingsAccount,
+            settings: { ...seedData.settings, ...parsed.settings },
+          };
+          localStorage.setItem(STORAGE_KEY, JSON.stringify(data));
+          setDoc(doc(db, "users", user.uid), data).catch(console.error);
+        }
       } catch (error) {
         console.error(error);
       }
