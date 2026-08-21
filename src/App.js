@@ -754,6 +754,16 @@ function styles(dark = false, mobile = false) {
   };
 }
 
+function EmptyState({ icon, text, sub }) {
+  return (
+    <div style={{ textAlign: "center", padding: "32px 16px", color: "#71717a" }}>
+      <div style={{ fontSize: 36, marginBottom: 10 }}>{icon}</div>
+      <div style={{ fontWeight: 700, fontSize: 15 }}>{text}</div>
+      {sub && <div style={{ fontSize: 13, marginTop: 6, opacity: 0.7 }}>{sub}</div>}
+    </div>
+  );
+}
+
 function ProgressBar({ value, color = "#18181b", dark = false }) {
   return (
     <div style={styles(dark).progressWrap}>
@@ -1678,6 +1688,7 @@ function toggleVersion(version) {
               </div>
 
             <div style={{ display: "grid", gap: 12, marginTop: 16 }}>
+              {filteredTransactions.length === 0 && <EmptyState icon="🧾" text="Keine Buchungen gefunden" sub="Erfasse oben deine erste Zahlung." />}
               {filteredTransactions.map((t) => (
                 <div key={t.id} style={{ ...s.softCard, background: s.surface }}>
                   {editingTransactionId === t.id ? (
@@ -1806,6 +1817,7 @@ function toggleVersion(version) {
               </div>
 
               <div style={{ display: "grid", gap: 12, marginTop: 16 }}>
+                {recurring.length === 0 && <EmptyState icon="🔁" text="Noch keine Fixausgaben" sub="Füge Handy, Abos oder Sparraten hinzu." />}
                 {recurring.map((r) => (
                   <div key={r.id} style={s.softCard}>
                     {editingRecurringId === r.id ? (
@@ -1886,6 +1898,7 @@ function toggleVersion(version) {
             </div>
 
             <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(320px,1fr))", gap: 16 }}>
+              {budgetsWithSpent.filter((b) => b.name.toLowerCase() !== "sparen").length === 0 && <EmptyState icon="🎯" text="Noch keine Budgets" sub="Erstelle oben dein erstes Budget." />}
               {budgetsWithSpent.filter((b) => b.name.toLowerCase() !== "sparen").map((budget) => (
                 <div key={budget.id} style={{ ...s.card, padding: 18 }}>
                   <div style={{ display: "flex", justifyContent: "space-between", gap: 10, alignItems: "start" }}>
@@ -2001,6 +2014,7 @@ function toggleVersion(version) {
             </div>
 
             <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(320px,1fr))", gap: 16 }}>
+              {goals.length === 0 && <EmptyState icon="💰" text="Noch keine Sparziele" sub="Definiere oben worauf du sparst." />}
               {goals.map((goal) => {
                 const progress = getGoalProgress(goal);
                 return (
