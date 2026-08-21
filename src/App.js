@@ -1036,18 +1036,34 @@ const [openVersions, setOpenVersions] = useState({
   function addTransaction() {
     const amount = Number(newTransaction.amount);
     if (!newTransaction.category || !amount || amount <= 0) return;
-    setTransactions((prev) => [{ id: Date.now(), ...newTransaction, amount }, ...prev]);
+    const txn = { id: Date.now(), ...newTransaction, amount, affectsAccount: true };
+    setTransactions((prev) => [txn, ...prev]);
     if (newTransaction.type === "income") {
       if (newTransaction.targetAccount === "savings") {
         setSavingsAccount((p) => ({ ...p, balance: p.balance + amount }));
       } else {
         setMainAccount((p) => ({ ...p, balance: p.balance + amount }));
       }
+    } else {
+      setMainAccount((p) => ({ ...p, balance: p.balance - amount }));
     }
     setNewTransaction({ type: "expense", category: "Freizeit", amount: "", note: "", date: new Date().toISOString().slice(0, 10), bucket: "flex", targetAccount: "main" });
   }
 
   function deleteTransaction(id) {
+    const txn = transactions.find((t) => t.id === id);
+    if (txn && txn.affectsAccount) {
+      const amount = Number(txn.amount);
+      if (txn.type === "income") {
+        if (txn.targetAccount === "savings") {
+          setSavingsAccount((p) => ({ ...p, balance: p.balance - amount }));
+        } else {
+          setMainAccount((p) => ({ ...p, balance: p.balance - amount }));
+        }
+      } else {
+        setMainAccount((p) => ({ ...p, balance: p.balance + amount }));
+      }
+    }
     setTransactions((prev) => prev.filter((t) => t.id !== id));
   }
 
