@@ -66,6 +66,43 @@ const chartColors = ["#22c55e", "#f59e0b", "#ef4444", "#0ea5e9", "#8b5cf6", "#14
   const mobileOnly = typeof window !== "undefined" && window.innerWidth < 640;
   const versionHistory = [
     {
+      version: "v4.1",
+      name: "Persönlicher Hero",
+      date: "2026-08-21",
+      notes: [
+        {
+          title: "Personalisierung",
+          items: [
+            "Benutzername kann bei der Registrierung und in den Einstellungen festgelegt werden.",
+            "Hero-Bereich begrüsst dich persönlich: Guten Morgen/Tag/Abend, [Name].",
+            "Name wird mit dem Account gespeichert und auf allen Geräten synchronisiert.",
+          ],
+        },
+        {
+          title: "Design",
+          items: [
+            "Login-Animation: Elemente gleiten beim Anmelden sanft rein.",
+          ],
+        },
+      ],
+    },
+    {
+      version: "v4.0",
+      name: "Cloud-Sync & Accounts",
+      date: "2026-08-21",
+      notes: [
+        {
+          title: "Konten & Synchronisation",
+          items: [
+            "Neues Login-System mit E-Mail und Passwort.",
+            "Daten werden sicher in der Cloud gespeichert (Firebase).",
+            "Geräteübergreifende Echtzeit-Synchronisation — Änderungen erscheinen sofort überall.",
+            "Registrierung und Anmeldung direkt in der App.",
+          ],
+        },
+      ],
+    },
+    {
       version: "v3.4",
       name: "Dark Mode & Redesign",
       date: "2026-08-20",
@@ -783,6 +820,7 @@ const [editRecurring, setEditRecurring] = useState({
 
 
 const [openVersions, setOpenVersions] = useState({
+  __block: false,
   [versionHistory[0].version]: true,
 });
 
@@ -1215,7 +1253,7 @@ function toggleVersion(version) {
           {authMode === "register" && authStep === 2 ? (
             <div style={{ display: "grid", gap: 12 }}>
               <div style={{ fontSize: 14, color: "#a1a1aa", marginBottom: 4 }}>Fast geschafft! Wie sollen wir dich nennen?</div>
-              <div><div style={{ fontSize: 12, fontWeight: 600, color: "#71717a", marginBottom: 6, textTransform: "uppercase", letterSpacing: 1 }}>Dein Name</div><input style={inputStyle} type="text" value={authUsername} onChange={(e) => setAuthUsername(e.target.value)} placeholder="z.B. Fynn" onKeyDown={(e) => e.key === "Enter" && handleAuth()} autoFocus /></div>
+              <div><div style={{ fontSize: 12, fontWeight: 600, color: "#71717a", marginBottom: 6, textTransform: "uppercase", letterSpacing: 1 }}>Dein Name</div><input style={inputStyle} type="text" value={authUsername} onChange={(e) => setAuthUsername(e.target.value)} placeholder="z.B. Jeffrey" onKeyDown={(e) => e.key === "Enter" && handleAuth()} autoFocus /></div>
             </div>
           ) : (
             <div style={{ display: "grid", gap: 12 }}>
@@ -1884,50 +1922,11 @@ function toggleVersion(version) {
 
         {tab === "settings" && (
         <div style={{ display: "grid", gap: 16, marginTop: 8 }}>
-          <div style={{ ...s.softCard, background: "#eff6ff", borderColor: "#bfdbfe", overflow: "hidden" }}>
-            <div style={{ fontWeight: 900, fontSize: 18 }}>Version History</div>
-            <div style={{ fontSize: 14, color: "#52525b", marginTop: 4 }}>
-              Alle Updates der App auf einen Blick
-            </div>
-
-            <div style={{ display: "grid", gap: 10, marginTop: 14 }}>
-              {versionHistory.map((entry, index) => (
-                <div key={entry.version} style={{ background: s.surface, border: `1px solid ${s.border}`, borderRadius: 16, padding: 14 }}>
-                  <button style={{ ...s.buttonSecondary, width: "100%", justifyContent: "space-between", whiteSpace: "normal", height: "auto", padding: "10px 14px", textAlign: "left" }} onClick={() => toggleVersion(entry.version)}>
-                    <span>{entry.version} – {entry.name}</span>
-                    <span>{openVersions[entry.version] ? "▲" : "▼"}</span>
-                  </button>
-
-                  {openVersions[entry.version] && (
-                    <div style={{ marginTop: 12 }}>
-                      <div style={{ fontSize: 13, color: "#71717a", marginBottom: 8 }}>
-                        {entry.date}{index === 0 ? " · Neustes Update" : ""}
-                      </div>
-
-                      {entry.notes.map((note) => (
-                        <div key={note.title} style={{ marginTop: 8 }}>
-                          <div style={{ fontWeight: 800 }}>● {note.title}</div>
-                          <div style={{ marginLeft: 20, marginTop: 4 }}>
-                            {note.items.map((item) => (
-                              <div key={item} style={{ fontSize: 14, color: "#52525b", marginTop: 3 }}>
-                                - {item}
-                              </div>
-                            ))}
-                          </div>
-                        </div>
-                      ))}
-                    </div>
-                  )}
-                </div>
-              ))}
-            </div>
-          </div>
-
           <div style={{ display: "grid", gridTemplateColumns: mobileOnly ? "1fr" : "repeat(auto-fit, minmax(250px,1fr))", gap: 16, minWidth: 0 }}>
             <div style={s.softCard}>
               <div style={{ fontWeight: 800, color: s.text }}>Dein Name</div>
               <div style={{ fontSize: 14, color: s.textMuted, marginTop: 4, marginBottom: 10 }}>Wird im Hero zur Begrüssung verwendet.</div>
-              <input style={s.input} type="text" value={username} onChange={(e) => setUsername(e.target.value)} placeholder="z.B. Fynn" />
+              <input style={s.input} type="text" value={username} onChange={(e) => setUsername(e.target.value)} placeholder="z.B. Jeffrey" />
             </div>
             <div style={s.softCard}>
               <div style={{ fontWeight: 800, color: s.text }}>Finanzmonat startet am</div>
@@ -1954,6 +1953,47 @@ function toggleVersion(version) {
                 </button>
               </div>
             </div>
+          </div>
+
+          {/* Version History — aufklappbarer Block am Ende */}
+          <div style={{ ...s.softCard, overflow: "hidden" }}>
+            <button style={{ width: "100%", background: "none", border: "none", cursor: "pointer", display: "flex", justifyContent: "space-between", alignItems: "center", padding: 0 }} onClick={() => setOpenVersions((v) => ({ ...v, __block: !v.__block }))}>
+              <div>
+                <div style={{ fontWeight: 900, fontSize: 16, color: s.text, textAlign: "left" }}>Version History</div>
+                <div style={{ fontSize: 13, color: s.textMuted, marginTop: 2, textAlign: "left" }}>Alle Updates der App auf einen Blick</div>
+              </div>
+              <span style={{ fontSize: 12, color: s.textMuted, marginLeft: 16 }}>{openVersions.__block ? "▲" : "▼"}</span>
+            </button>
+
+            {openVersions.__block && (
+              <div style={{ display: "grid", gap: 10, marginTop: 16 }}>
+                {versionHistory.map((entry, index) => (
+                  <div key={entry.version} style={{ background: s.surfaceAlt, border: `1px solid ${s.border}`, borderRadius: 14, overflow: "hidden" }}>
+                    <button style={{ ...s.buttonSecondary, width: "100%", justifyContent: "space-between", whiteSpace: "normal", height: "auto", padding: "10px 14px", textAlign: "left", borderRadius: 0, border: "none" }} onClick={() => toggleVersion(entry.version)}>
+                      <span style={{ fontWeight: 700 }}>{entry.version} – {entry.name}</span>
+                      <span style={{ fontSize: 11, color: s.textMuted }}>{openVersions[entry.version] ? "▲" : "▼"}</span>
+                    </button>
+                    {openVersions[entry.version] && (
+                      <div style={{ padding: "0 14px 14px" }}>
+                        <div style={{ fontSize: 12, color: s.textMuted, marginBottom: 8 }}>
+                          {entry.date}{index === 0 ? " · Neustes Update" : ""}
+                        </div>
+                        {entry.notes.map((note) => (
+                          <div key={note.title} style={{ marginTop: 8 }}>
+                            <div style={{ fontWeight: 700, fontSize: 13, color: s.text }}>● {note.title}</div>
+                            <div style={{ marginLeft: 16, marginTop: 4 }}>
+                              {note.items.map((item) => (
+                                <div key={item} style={{ fontSize: 13, color: s.textMuted, marginTop: 3 }}>- {item}</div>
+                              ))}
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                    )}
+                  </div>
+                ))}
+              </div>
+            )}
           </div>
         </div>
       )}
