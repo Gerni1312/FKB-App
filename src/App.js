@@ -1191,11 +1191,13 @@ const [openVersions, setOpenVersions] = useState({
   }
 
   function handleAppUpdate() {
-    if (window.__swWaiting) {
-      window.__swWaiting.postMessage({ type: 'SKIP_WAITING' });
-      navigator.serviceWorker.addEventListener('controllerchange', () => {
-        window.location.reload();
-      });
+    const waiting = window.__swWaiting;
+    if (waiting) {
+      navigator.serviceWorker.addEventListener('controllerchange', () => window.location.reload(), { once: true });
+      waiting.postMessage({ type: 'SKIP_WAITING' });
+      setTimeout(() => window.location.reload(), 2000);
+    } else {
+      window.location.reload();
     }
   }
 
