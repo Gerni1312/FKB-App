@@ -1645,7 +1645,7 @@ function toggleVersion(version) {
                     <div style={{ minWidth: 0 }}>
                       <div style={{ display: "flex", gap: 8, alignItems: "center", flexWrap: "wrap" }}>
                         <div style={{ fontWeight: 800, fontSize: 18 }}>{t.category}</div>
-                        <span style={s.badge}>{t.bucket}</span>
+                        <span style={s.badge}>{{ income: "Einnahme", fixed: "Fixkosten", flex: "Variabel", saving: "Sparen" }[t.bucket] || t.bucket}</span>
                       </div>
                       <div style={{ color: "#71717a", marginTop: 6, fontSize: 14 }}>{t.note || "Keine Notiz"}</div>
                       <div style={{ color: "#71717a", marginTop: 8, fontSize: 12, display: "flex", gap: 12, flexWrap: "wrap" }}>
