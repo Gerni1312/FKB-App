@@ -1344,7 +1344,7 @@ function toggleVersion(version) {
           <button onClick={handleAuth} disabled={authBusy} style={{ marginTop: 20, width: "100%", height: 48, borderRadius: 12, border: "none", background: "#f4f4f5", color: "#18181b", fontWeight: 700, fontSize: 15, cursor: authBusy ? "not-allowed" : "pointer", opacity: authBusy ? 0.7 : 1 }}>
             {authBusy ? "Bitte warten…" : authMode === "login" ? "Anmelden" : authStep === 1 ? "Weiter" : "Konto erstellen"}
           </button>
-          <div style={{ marginTop: 16, fontSize: 12, color: "#52525b", textAlign: "center", lineHeight: 1.6 }}>Deine Daten werden geräteübergreifend synchronisiert.</div>
+          <div style={{ marginTop: 16, fontSize: 12, color: s.textMuted, textAlign: "center", lineHeight: 1.6 }}>Deine Daten werden geräteübergreifend synchronisiert.</div>
         </div>
       </div>
     );
@@ -1573,7 +1573,7 @@ function toggleVersion(version) {
                       <div style={{ display: "flex", justifyContent: "space-between", gap: 10, alignItems: "start" }}>
                         <div>
                           <div style={{ fontWeight: 800 }}>{budget.name}</div>
-                          <div style={{ fontSize: 13, color: "#52525b", marginTop: 3 }}>{money(budget.spent, currency)} von {money(budget.limit, currency)}</div>
+                          <div style={{ fontSize: 13, color: s.textMuted, marginTop: 3 }}>{money(budget.spent, currency)} von {money(budget.limit, currency)}</div>
                         </div>
                         <span style={{ ...s.badge, color: budget.status.color, borderColor: budget.status.border }}>{budget.status.label}</span>
                       </div>
@@ -1878,9 +1878,9 @@ function toggleVersion(version) {
                     <button style={s.button} onClick={handleSavingsTransfer}><ArrowRightLeft size={16} /> Buchen</button>
                   </div>
 
-                  <div style={{ ...s.softCard, marginTop: 14, background: "#eff6ff", borderColor: "#bfdbfe" }}>
+                  <div style={{ ...s.softCard, marginTop: 14, background: darkMode ? "rgba(29,78,216,0.12)" : "#eff6ff", borderColor: darkMode ? "rgba(29,78,216,0.25)" : "#bfdbfe" }}>
                     <div style={{ fontWeight: 800 }}>Wie das Ausleihen funktioniert</div>
-                    <div style={{ fontSize: 14, color: "#52525b", marginTop: 6 }}>Beim Ausleihen wird Geld vom Sparkonto aufs Hauptkonto verschoben. Beim Ausgleich am Monatsanfang geht der geliehene Betrag plus Zins wieder zurück aufs Sparkonto.</div>
+                    <div style={{ fontSize: 14, color: s.textMuted, marginTop: 6 }}>Beim Ausleihen wird Geld vom Sparkonto aufs Hauptkonto verschoben. Beim Ausgleich am Monatsanfang geht der geliehene Betrag plus Zins wieder zurück aufs Sparkonto.</div>
                   </div>
 
                   <div style={{ fontWeight: 800, marginTop: 20, marginBottom: 10 }}>Vom Sparkonto ausleihen</div>
