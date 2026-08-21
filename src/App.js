@@ -1365,6 +1365,8 @@ function toggleVersion(version) {
         @keyframes slideInUp { from { opacity: 0; transform: translateY(30px); } to { opacity: 1; transform: translateY(0); } }
         @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
         @keyframes tabIn { from { opacity: 0; transform: translateY(18px) scale(0.99); } to { opacity: 1; transform: translateY(0) scale(1); } }
+        @keyframes fadeSlideIn { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: translateY(0); } }
+        .fkb-fade-slide { animation: fadeSlideIn 0.22s cubic-bezier(0.16, 1, 0.3, 1) both; }
         @keyframes popIn { from { opacity: 0; transform: scale(0.95); } to { opacity: 1; transform: scale(1); } }
 
         .fkb-nav { animation: slideInUp 0.4s ease both; }
@@ -2025,7 +2027,7 @@ function toggleVersion(version) {
                   const data = categoryView === "expense" ? spendingByCategory : incomeByCategory;
                   const emptyLabel = categoryView === "expense" ? "Keine Ausgaben" : "Keine Einnahmen";
                   return (
-                    <div style={{ display: "flex", gap: 16, alignItems: "center", flexWrap: "wrap" }}>
+                    <div key={categoryView} className="fkb-fade-slide" style={{ display: "flex", gap: 16, alignItems: "center", flexWrap: "wrap" }}>
                       <div style={{ flex: "1 1 180px", minWidth: 160 }}>
                         {data.length === 0
                           ? <div style={{ color: s.textMuted, fontSize: 14 }}>{emptyLabel}</div>
