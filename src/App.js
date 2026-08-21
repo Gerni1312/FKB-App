@@ -51,6 +51,19 @@ const categories = [
     "Haushalt",
     "Elektronik",
     "Alkohol",
+    "Gesundheit",
+    "Kleidung",
+    "Versicherung",
+    "Sonstiges",
+];
+
+const incomeCategories = [
+    "Lohn",
+    "Bonus",
+    "Nebeneinkommen",
+    "Zinsen",
+    "Rückzahlung",
+    "Geschenk",
     "Sonstiges",
 ];
 
@@ -817,7 +830,7 @@ function App() {
   const [authUsername, setAuthUsername] = useState("");
   const s = styles(darkMode, mobileOnly);
 
-  const [newTransaction, setNewTransaction] = useState({ type: "expense", category: "Freizeit", amount: "", note: "", date: new Date().toISOString().slice(0, 10), bucket: "flex", targetAccount: "main" });
+  const [newTransaction, setNewTransaction] = useState({ type: "expense", category: "Essen", amount: "", note: "", date: new Date().toISOString().slice(0, 10), bucket: "flex", targetAccount: "main" });
   const [newBudget, setNewBudget] = useState({ name: "", limit: "", resetMode: "monthly" });
   const [newRecurring, setNewRecurring] = useState({ title: "", amount: "", category: "", bucket: "fixed", type: "expense", dayOfMonth: "1", frequency: "monthly", monthOfYear: 1, note: "" });
   const [newGoal, setNewGoal] = useState({ name: "", target: "", current: "0" });
@@ -1047,7 +1060,7 @@ const [openVersions, setOpenVersions] = useState({
     } else {
       setMainAccount((p) => ({ ...p, balance: p.balance - amount }));
     }
-    setNewTransaction({ type: "expense", category: "Freizeit", amount: "", note: "", date: new Date().toISOString().slice(0, 10), bucket: "flex", targetAccount: "main" });
+    setNewTransaction({ type: "expense", category: "Essen", amount: "", note: "", date: new Date().toISOString().slice(0, 10), bucket: "flex", targetAccount: "main" });
   }
 
   function deleteTransaction(id) {
@@ -1568,7 +1581,7 @@ function toggleVersion(version) {
             <div style={{ ...s.card, padding: 18 }}>
               <SectionTitle title="Zahlung erfassen" description="Einnahme oder Ausgabe hinzufügen" />
               <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(180px, 1fr))", gap: 12 }}>
-                <select style={s.input} value={newTransaction.type} onChange={(e) => setNewTransaction((p) => ({ ...p, type: e.target.value, bucket: e.target.value === "income" ? "income" : "flex", targetAccount: "main" }))}>
+                <select style={s.input} value={newTransaction.type} onChange={(e) => { const isIncome = e.target.value === "income"; setNewTransaction((p) => ({ ...p, type: e.target.value, bucket: isIncome ? "income" : "flex", targetAccount: "main", category: isIncome ? "Lohn" : "Essen" })); }}>
                   <option value="income">Einnahme</option>
                   <option value="expense">Ausgabe</option>
                 </select>
@@ -1584,7 +1597,11 @@ function toggleVersion(version) {
                     <option value="saving">Sparen</option>
                   </select>
                 )}
-                <input style={s.input} placeholder="Kategorie" value={newTransaction.category} onChange={(e) => setNewTransaction((p) => ({ ...p, category: e.target.value }))} />
+                <select style={s.input} value={newTransaction.category} onChange={(e) => setNewTransaction((p) => ({ ...p, category: e.target.value }))}>
+                  {(newTransaction.type === "income" ? incomeCategories : categories).map((cat) => (
+                    <option key={cat} value={cat}>{cat}</option>
+                  ))}
+                </select>
                 <input style={s.input} type="number" placeholder="Betrag" value={newTransaction.amount} onChange={(e) => setNewTransaction((p) => ({ ...p, amount: e.target.value }))} />
                 <input style={s.input} type="date" value={newTransaction.date} onChange={(e) => setNewTransaction((p) => ({ ...p, date: e.target.value }))} />
                 <input style={s.input} placeholder="Notiz" value={newTransaction.note} onChange={(e) => setNewTransaction((p) => ({ ...p, note: e.target.value }))} />
