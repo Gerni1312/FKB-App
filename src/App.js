@@ -1,4 +1,7 @@
-import React, { useEffect, useMemo, useRef, useState } from "react";
+import React, { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { auth, db } from "./firebase";
+import { createUserWithEmailAndPassword, signInWithEmailAndPassword, signOut, onAuthStateChanged } from "firebase/auth";
+import { doc, getDoc, setDoc } from "firebase/firestore";
 import {
   Plus,
   Wallet,
@@ -707,6 +710,17 @@ function StatCard({ title, value, subValue, hint, icon: Icon, gradient }) {
 
 function App() {
   const fileInputRef = useRef(null);
+
+  // Auth
+  const [user, setUser] = useState(null);
+  const [authLoading, setAuthLoading] = useState(true);
+  const [authMode, setAuthMode] = useState("login");
+  const [authEmail, setAuthEmail] = useState("");
+  const [authPassword, setAuthPassword] = useState("");
+  const [authError, setAuthError] = useState("");
+  const [authBusy, setAuthBusy] = useState(false);
+  const [dataLoaded, setDataLoaded] = useState(false);
+
   const [transactions, setTransactions] = useState(seedData.transactions);
   const [budgets, setBudgets] = useState(seedData.budgets);
   const [recurring, setRecurring] = useState(seedData.recurring);
@@ -775,38 +789,53 @@ const [openVersions, setOpenVersions] = useState({
     return () => window.removeEventListener('swUpdateAvailable', handler);
   }, []);
 
-  useEffect(() => {
-    try {
-      const raw = localStorage.getItem(STORAGE_KEY);
-      if (!raw) return;
-      const parsed = JSON.parse(raw);
-      if (parsed.transactions) setTransactions(parsed.transactions);
-      if (parsed.budgets) setBudgets(parsed.budgets);
-      if (parsed.recurring) setRecurring(parsed.recurring);
-      if (parsed.goals) setGoals(parsed.goals);
-      if (parsed.mainAccount) setMainAccount(parsed.mainAccount);
-      if (parsed.savingsAccount) setSavingsAccount(parsed.savingsAccount);
-      if (parsed.settings?.currency) setCurrency(parsed.settings.currency);
-      if (typeof parsed.settings?.weeklyMode === "boolean") setWeeklyMode(parsed.settings.weeklyMode);
-      if (typeof parsed.settings?.monthOffset === "number") setMonthOffset(parsed.settings.monthOffset);
-      if (typeof parsed.settings?.payday === "number") setPayday(parsed.settings.payday);
-      if (typeof parsed.settings?.darkMode === "boolean") setDarkMode(parsed.settings.darkMode);
-    } catch (error) {
-      console.error(error);
-    }
+  const loadFromParsed = useCallback((parsed) => {
+    if (parsed.transactions) setTransactions(parsed.transactions);
+    if (parsed.budgets) setBudgets(parsed.budgets);
+    if (parsed.recurring) setRecurring(parsed.recurring);
+    if (parsed.goals) setGoals(parsed.goals);
+    if (parsed.mainAccount) setMainAccount(parsed.mainAccount);
+    if (parsed.savingsAccount) setSavingsAccount(parsed.savingsAccount);
+    if (parsed.settings?.currency) setCurrency(parsed.settings.currency);
+    if (typeof parsed.settings?.weeklyMode === "boolean") setWeeklyMode(parsed.settings.weeklyMode);
+    if (typeof parsed.settings?.monthOffset === "number") setMonthOffset(parsed.settings.monthOffset);
+    if (typeof parsed.settings?.payday === "number") setPayday(parsed.settings.payday);
+    if (typeof parsed.settings?.darkMode === "boolean") setDarkMode(parsed.settings.darkMode);
   }, []);
 
+  // Auth state listener — lädt Daten aus Firestore beim Login
   useEffect(() => {
-    localStorage.setItem(STORAGE_KEY, JSON.stringify({
-      transactions,
-      budgets,
-      recurring,
-      goals,
-      mainAccount,
-      savingsAccount,
+    const unsub = onAuthStateChanged(auth, async (u) => {
+      setUser(u);
+      if (u) {
+        try {
+          const snap = await getDoc(doc(db, "users", u.uid));
+          if (snap.exists()) loadFromParsed(snap.data());
+          else {
+            // Fallback: localStorage
+            try {
+              const raw = localStorage.getItem(STORAGE_KEY);
+              if (raw) loadFromParsed(JSON.parse(raw));
+            } catch {}
+          }
+        } catch (e) { console.error(e); }
+      }
+      setAuthLoading(false);
+      setDataLoaded(true);
+    });
+    return unsub;
+  }, [loadFromParsed]);
+
+  // Firestore-Sync bei jeder Datenänderung (nur wenn eingeloggt)
+  useEffect(() => {
+    if (!user || !dataLoaded) return;
+    const data = {
+      transactions, budgets, recurring, goals, mainAccount, savingsAccount,
       settings: { currency, weeklyMode, monthOffset, payday, darkMode },
-    }));
-  }, [transactions, budgets, recurring, goals, mainAccount, savingsAccount, currency, weeklyMode, monthOffset, payday, darkMode]);
+    };
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(data));
+    setDoc(doc(db, "users", user.uid), data).catch(console.error);
+  }, [user, dataLoaded, transactions, budgets, recurring, goals, mainAccount, savingsAccount, currency, weeklyMode, monthOffset, payday, darkMode]);
 
   useEffect(() => {
     // Nur Einträge die wirklich dran sind (jährliche nur im richtigen Monat)
@@ -1109,8 +1138,59 @@ function toggleVersion(version) {
 
   const monthNames = ["Januar", "Februar", "März", "April", "Mai", "Juni", "Juli", "August", "September", "Oktober", "November", "Dezember"];
 
+  async function handleAuth() {
+    setAuthBusy(true);
+    setAuthError("");
+    try {
+      if (authMode === "login") {
+        await signInWithEmailAndPassword(auth, authEmail, authPassword);
+      } else {
+        await createUserWithEmailAndPassword(auth, authEmail, authPassword);
+      }
+    } catch (e) {
+      const msgs = { "auth/invalid-email": "Ungültige E-Mail-Adresse.", "auth/user-not-found": "Kein Konto mit dieser E-Mail.", "auth/wrong-password": "Falsches Passwort.", "auth/email-already-in-use": "E-Mail wird bereits verwendet.", "auth/weak-password": "Passwort muss mindestens 6 Zeichen haben.", "auth/invalid-credential": "E-Mail oder Passwort falsch." };
+      setAuthError(msgs[e.code] || e.message);
+    }
+    setAuthBusy(false);
+  }
 
 
+
+
+  // Auth laden
+  if (authLoading) {
+    return <div style={{ minHeight: "100vh", background: "#111113", display: "grid", placeItems: "center" }}><div style={{ color: "#a1a1aa", fontSize: 14 }}>Laden…</div></div>;
+  }
+
+  // Login / Register Screen
+  if (!user) {
+    const inputStyle = { width: "100%", height: 44, borderRadius: 12, border: "1px solid rgba(255,255,255,0.12)", padding: "0 14px", background: "#2a2a2e", color: "#f4f4f5", fontSize: 14, boxSizing: "border-box" };
+    return (
+      <div style={{ minHeight: "100vh", background: "#111113", display: "grid", placeItems: "center", fontFamily: "Inter, system-ui, sans-serif" }}>
+        <div style={{ width: "100%", maxWidth: 400, padding: 24 }}>
+          <div style={{ fontSize: 13, fontWeight: 800, letterSpacing: 2, textTransform: "uppercase", color: "#f4f4f5", marginBottom: 8 }}>FKB</div>
+          <div style={{ fontSize: 28, fontWeight: 900, color: "#f4f4f5", marginBottom: 4 }}>{authMode === "login" ? "Anmelden" : "Registrieren"}</div>
+          <div style={{ fontSize: 14, color: "#71717a", marginBottom: 28 }}>Deine Daten werden sicher in der Cloud gespeichert.</div>
+          <div style={{ display: "flex", gap: 8, marginBottom: 24, background: "#1c1c1f", borderRadius: 14, padding: 4 }}>
+            {["login", "register"].map((m) => (
+              <button key={m} onClick={() => { setAuthMode(m); setAuthError(""); }} style={{ flex: 1, height: 38, borderRadius: 10, border: "none", cursor: "pointer", fontWeight: 600, fontSize: 13, background: authMode === m ? "#f4f4f5" : "transparent", color: authMode === m ? "#18181b" : "#71717a" }}>
+                {m === "login" ? "Anmelden" : "Registrieren"}
+              </button>
+            ))}
+          </div>
+          <div style={{ display: "grid", gap: 12 }}>
+            <div><div style={{ fontSize: 12, fontWeight: 600, color: "#71717a", marginBottom: 6, textTransform: "uppercase", letterSpacing: 1 }}>E-Mail</div><input style={inputStyle} type="email" value={authEmail} onChange={(e) => setAuthEmail(e.target.value)} placeholder="deine@email.ch" /></div>
+            <div><div style={{ fontSize: 12, fontWeight: 600, color: "#71717a", marginBottom: 6, textTransform: "uppercase", letterSpacing: 1 }}>Passwort</div><input style={inputStyle} type="password" value={authPassword} onChange={(e) => setAuthPassword(e.target.value)} placeholder="••••••••" onKeyDown={(e) => e.key === "Enter" && handleAuth()} /></div>
+          </div>
+          {authError && <div style={{ marginTop: 12, fontSize: 13, color: "#fca5a5", background: "rgba(220,38,38,0.1)", borderRadius: 10, padding: "10px 14px" }}>{authError}</div>}
+          <button onClick={handleAuth} disabled={authBusy} style={{ marginTop: 20, width: "100%", height: 48, borderRadius: 12, border: "none", background: "#f4f4f5", color: "#18181b", fontWeight: 700, fontSize: 15, cursor: authBusy ? "not-allowed" : "pointer", opacity: authBusy ? 0.7 : 1 }}>
+            {authBusy ? "Bitte warten…" : authMode === "login" ? "Anmelden" : "Konto erstellen"}
+          </button>
+          <div style={{ marginTop: 16, fontSize: 12, color: "#52525b", textAlign: "center", lineHeight: 1.6 }}>Deine Daten werden geräteübergreifend synchronisiert.</div>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div style={s.app}>
@@ -1131,6 +1211,10 @@ function toggleVersion(version) {
                 <Icon size={15} /> {label}
               </button>
             ))}
+            <div style={{ marginLeft: "auto", display: "flex", alignItems: "center", gap: 10 }}>
+              <span style={{ fontSize: 12, color: s.textMuted, maxWidth: 160, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{user?.email}</span>
+              <button onClick={() => signOut(auth)} style={{ ...s.buttonSecondary, height: 34, padding: "0 12px", fontSize: 12 }}>Abmelden</button>
+            </div>
           </div>
         </div>
       )}
