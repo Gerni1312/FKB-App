@@ -368,7 +368,7 @@ const seedData = {
   ],
   mainAccount: { balance: 220 },
   savingsAccount: { balance: 400, plannedMonthlyDeposit: 150, borrowedOut: 80, expectedInterest: 2 },
-  settings: { currency: "CHF", weeklyMode: true, monthOffset: 0, payday: 25, darkMode: false },
+  settings: { currency: "CHF", weeklyMode: true, monthOffset: 0, payday: 25, darkMode: false, username: "" },
 };
 
 function money(value, currency = "CHF") {
@@ -740,6 +740,10 @@ function App() {
 
   const [payday, setPayday] = useState(seedData.settings.payday);
   const [darkMode, setDarkMode] = useState(seedData.settings.darkMode);
+  const [username, setUsername] = useState(seedData.settings.username);
+  const [showWelcome, setShowWelcome] = useState(false);
+  const [authStep, setAuthStep] = useState(1);
+  const [authUsername, setAuthUsername] = useState("");
   const s = styles(darkMode, mobileOnly);
 
   const [newTransaction, setNewTransaction] = useState({ type: "expense", category: "Freizeit", amount: "", note: "", date: new Date().toISOString().slice(0, 10), bucket: "flex" });
@@ -802,6 +806,7 @@ const [openVersions, setOpenVersions] = useState({
     if (typeof parsed.settings?.monthOffset === "number") setMonthOffset(parsed.settings.monthOffset);
     if (typeof parsed.settings?.payday === "number") setPayday(parsed.settings.payday);
     if (typeof parsed.settings?.darkMode === "boolean") setDarkMode(parsed.settings.darkMode);
+    if (parsed.settings?.username) setUsername(parsed.settings.username);
   }, []);
 
   // Auth state listener — Echtzeit-Sync via onSnapshot
@@ -839,11 +844,11 @@ const [openVersions, setOpenVersions] = useState({
     if (skipNextWrite.current) { skipNextWrite.current = false; return; }
     const data = {
       transactions, budgets, recurring, goals, mainAccount, savingsAccount,
-      settings: { currency, weeklyMode, monthOffset, payday, darkMode },
+      settings: { currency, weeklyMode, monthOffset, payday, darkMode, username },
     };
     localStorage.setItem(STORAGE_KEY, JSON.stringify(data));
     setDoc(doc(db, "users", user.uid), data).catch(console.error);
-  }, [user, dataLoaded, transactions, budgets, recurring, goals, mainAccount, savingsAccount, currency, weeklyMode, monthOffset, payday, darkMode]);
+  }, [user, dataLoaded, transactions, budgets, recurring, goals, mainAccount, savingsAccount, currency, weeklyMode, monthOffset, payday, darkMode, username]);
 
   useEffect(() => {
     // Nur Einträge die wirklich dran sind (jährliche nur im richtigen Monat)
@@ -1161,17 +1166,27 @@ function toggleVersion(version) {
   const monthNames = ["Januar", "Februar", "März", "April", "Mai", "Juni", "Juli", "August", "September", "Oktober", "November", "Dezember"];
 
   async function handleAuth() {
+    if (authMode === "register" && authStep === 1) {
+      if (!authEmail || !authPassword) { setAuthError("Bitte E-Mail und Passwort eingeben."); return; }
+      setAuthStep(2);
+      setAuthError("");
+      return;
+    }
     setAuthBusy(true);
     setAuthError("");
     try {
       if (authMode === "login") {
         await signInWithEmailAndPassword(auth, authEmail, authPassword);
+        setShowWelcome(true);
       } else {
         await createUserWithEmailAndPassword(auth, authEmail, authPassword);
+        if (authUsername.trim()) setUsername(authUsername.trim());
+        setShowWelcome(true);
       }
     } catch (e) {
       const msgs = { "auth/invalid-email": "Ungültige E-Mail-Adresse.", "auth/user-not-found": "Kein Konto mit dieser E-Mail.", "auth/wrong-password": "Falsches Passwort.", "auth/email-already-in-use": "E-Mail wird bereits verwendet.", "auth/weak-password": "Passwort muss mindestens 6 Zeichen haben.", "auth/invalid-credential": "E-Mail oder Passwort falsch." };
       setAuthError(msgs[e.code] || e.message);
+      setAuthStep(1);
     }
     setAuthBusy(false);
   }
@@ -1195,18 +1210,25 @@ function toggleVersion(version) {
           <div style={{ fontSize: 14, color: "#71717a", marginBottom: 28 }}>Deine Daten werden sicher in der Cloud gespeichert.</div>
           <div style={{ display: "flex", gap: 8, marginBottom: 24, background: "#1c1c1f", borderRadius: 14, padding: 4 }}>
             {["login", "register"].map((m) => (
-              <button key={m} onClick={() => { setAuthMode(m); setAuthError(""); }} style={{ flex: 1, height: 38, borderRadius: 10, border: "none", cursor: "pointer", fontWeight: 600, fontSize: 13, background: authMode === m ? "#f4f4f5" : "transparent", color: authMode === m ? "#18181b" : "#71717a" }}>
+              <button key={m} onClick={() => { setAuthMode(m); setAuthError(""); setAuthStep(1); }} style={{ flex: 1, height: 38, borderRadius: 10, border: "none", cursor: "pointer", fontWeight: 600, fontSize: 13, background: authMode === m ? "#f4f4f5" : "transparent", color: authMode === m ? "#18181b" : "#71717a" }}>
                 {m === "login" ? "Anmelden" : "Registrieren"}
               </button>
             ))}
           </div>
-          <div style={{ display: "grid", gap: 12 }}>
-            <div><div style={{ fontSize: 12, fontWeight: 600, color: "#71717a", marginBottom: 6, textTransform: "uppercase", letterSpacing: 1 }}>E-Mail</div><input style={inputStyle} type="email" value={authEmail} onChange={(e) => setAuthEmail(e.target.value)} placeholder="deine@email.ch" /></div>
-            <div><div style={{ fontSize: 12, fontWeight: 600, color: "#71717a", marginBottom: 6, textTransform: "uppercase", letterSpacing: 1 }}>Passwort</div><input style={inputStyle} type="password" value={authPassword} onChange={(e) => setAuthPassword(e.target.value)} placeholder="••••••••" onKeyDown={(e) => e.key === "Enter" && handleAuth()} /></div>
-          </div>
+          {authMode === "register" && authStep === 2 ? (
+            <div style={{ display: "grid", gap: 12 }}>
+              <div style={{ fontSize: 14, color: "#a1a1aa", marginBottom: 4 }}>Fast geschafft! Wie sollen wir dich nennen?</div>
+              <div><div style={{ fontSize: 12, fontWeight: 600, color: "#71717a", marginBottom: 6, textTransform: "uppercase", letterSpacing: 1 }}>Dein Name</div><input style={inputStyle} type="text" value={authUsername} onChange={(e) => setAuthUsername(e.target.value)} placeholder="z.B. Fynn" onKeyDown={(e) => e.key === "Enter" && handleAuth()} autoFocus /></div>
+            </div>
+          ) : (
+            <div style={{ display: "grid", gap: 12 }}>
+              <div><div style={{ fontSize: 12, fontWeight: 600, color: "#71717a", marginBottom: 6, textTransform: "uppercase", letterSpacing: 1 }}>E-Mail</div><input style={inputStyle} type="email" value={authEmail} onChange={(e) => setAuthEmail(e.target.value)} placeholder="deine@email.ch" /></div>
+              <div><div style={{ fontSize: 12, fontWeight: 600, color: "#71717a", marginBottom: 6, textTransform: "uppercase", letterSpacing: 1 }}>Passwort</div><input style={inputStyle} type="password" value={authPassword} onChange={(e) => setAuthPassword(e.target.value)} placeholder="••••••••" onKeyDown={(e) => e.key === "Enter" && handleAuth()} /></div>
+            </div>
+          )}
           {authError && <div style={{ marginTop: 12, fontSize: 13, color: "#fca5a5", background: "rgba(220,38,38,0.1)", borderRadius: 10, padding: "10px 14px" }}>{authError}</div>}
           <button onClick={handleAuth} disabled={authBusy} style={{ marginTop: 20, width: "100%", height: 48, borderRadius: 12, border: "none", background: "#f4f4f5", color: "#18181b", fontWeight: 700, fontSize: 15, cursor: authBusy ? "not-allowed" : "pointer", opacity: authBusy ? 0.7 : 1 }}>
-            {authBusy ? "Bitte warten…" : authMode === "login" ? "Anmelden" : "Konto erstellen"}
+            {authBusy ? "Bitte warten…" : authMode === "login" ? "Anmelden" : authStep === 1 ? "Weiter" : "Konto erstellen"}
           </button>
           <div style={{ marginTop: 16, fontSize: 12, color: "#52525b", textAlign: "center", lineHeight: 1.6 }}>Deine Daten werden geräteübergreifend synchronisiert.</div>
         </div>
@@ -1214,10 +1236,28 @@ function toggleVersion(version) {
     );
   }
 
+  const greeting = (() => {
+    const h = new Date().getHours();
+    if (h < 12) return "Guten Morgen";
+    if (h < 18) return "Guten Tag";
+    return "Guten Abend";
+  })();
+
   return (
     <div style={s.app}>
+      <style>{`
+        @keyframes slideInLeft { from { opacity: 0; transform: translateX(-40px); } to { opacity: 1; transform: translateX(0); } }
+        @keyframes slideInRight { from { opacity: 0; transform: translateX(40px); } to { opacity: 1; transform: translateX(0); } }
+        @keyframes slideInUp { from { opacity: 0; transform: translateY(30px); } to { opacity: 1; transform: translateY(0); } }
+        @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
+        .fkb-nav { animation: slideInUp 0.4s ease both; }
+        .fkb-hero { animation: fadeIn 0.5s ease 0.1s both; }
+        .fkb-hero-text { animation: slideInLeft 0.5s ease 0.2s both; }
+        .fkb-hero-actions { animation: slideInRight 0.5s ease 0.2s both; }
+        .fkb-content { animation: slideInUp 0.5s ease 0.3s both; }
+      `}</style>
       {!mobileOnly && (
-        <div style={s.topNav}>
+        <div style={s.topNav} className="fkb-nav">
           <div style={s.topNavInner}>
             <div style={s.topNavLogo}>FKB</div>
             {[
@@ -1242,20 +1282,22 @@ function toggleVersion(version) {
       )}
 
       <div style={s.container}>
-        <div style={s.hero}>
+        <div style={s.hero} className="fkb-hero">
           <div style={{ display: "flex", justifyContent: "space-between", gap: 16, flexWrap: "wrap", alignItems: "center" }}>
-            <div>
+            <div className="fkb-hero-text">
               <div style={{ display: "flex", gap: 8, flexWrap: "wrap", alignItems: "center" }}>
                 <div style={{ fontSize: 12, letterSpacing: 3, textTransform: "uppercase", opacity: 0.65 }}>Fynn Kantonal Bank</div>
-                              <span style={{ ...s.badge, background: "rgba(255,255,255,0.1)", border: "1px solid rgba(255,255,255,0.12)", color: "white" }}>Secure. Smart. Simple.</span>
+                <span style={{ ...s.badge, background: "rgba(255,255,255,0.1)", border: "1px solid rgba(255,255,255,0.12)", color: "white" }}>Secure. Smart. Simple.</span>
               </div>
-              <div style={{ fontSize: 38, fontWeight: 900, marginTop: 10, lineHeight: 1.05 }}>Dein Geld. Deine Kontrolle.</div>
+              <div style={{ fontSize: 38, fontWeight: 900, marginTop: 10, lineHeight: 1.05 }}>
+                {username ? `${greeting}, ${username}.` : "Dein Geld. Deine Kontrolle."}
+              </div>
               <div style={{ marginTop: 10, maxWidth: 760, color: "rgba(255,255,255,0.78)", fontSize: 15 }}>
-                Einnahmen, Ausgaben und Sparziele — alles auf einen Blick.
+                {username ? "Dein Geld. Deine Kontrolle." : "Einnahmen, Ausgaben und Sparziele — alles auf einen Blick."}
               </div>
             </div>
 
-            <div style={{ display: "flex", flexWrap: "wrap", gap: 8 }}>
+            <div style={{ display: "flex", flexWrap: "wrap", gap: 8 }} className="fkb-hero-actions">
               <button style={s.buttonSecondary} onClick={() => setMonthOffset((m) => m - 1)}><ChevronLeft size={16} /> Voriger</button>
               <button style={s.buttonSecondary} onClick={() => setMonthOffset((m) => m + 1)}>Nächster <ChevronRight size={16} /></button>
               <button style={s.buttonSecondary} onClick={() => setMonthOffset(0)}>Heute</button>
@@ -1316,6 +1358,7 @@ function toggleVersion(version) {
         )}
 
 
+        <div className="fkb-content">
         {tab === "dashboard" && (
           <>
             {dangerBudgets.length > 0 && (
@@ -1885,6 +1928,11 @@ function toggleVersion(version) {
 
           <div style={{ display: "grid", gridTemplateColumns: mobileOnly ? "1fr" : "repeat(auto-fit, minmax(250px,1fr))", gap: 16, minWidth: 0 }}>
             <div style={s.softCard}>
+              <div style={{ fontWeight: 800, color: s.text }}>Dein Name</div>
+              <div style={{ fontSize: 14, color: s.textMuted, marginTop: 4, marginBottom: 10 }}>Wird im Hero zur Begrüssung verwendet.</div>
+              <input style={s.input} type="text" value={username} onChange={(e) => setUsername(e.target.value)} placeholder="z.B. Fynn" />
+            </div>
+            <div style={s.softCard}>
               <div style={{ fontWeight: 800, color: s.text }}>Finanzmonat startet am</div>
               <div style={{ fontSize: 14, color: s.textMuted, marginTop: 4, marginBottom: 10 }}>
                 Wähle den Tag, an dem dein Lohn kommt.
@@ -1912,6 +1960,7 @@ function toggleVersion(version) {
           </div>
         </div>
       )}
+      </div>{/* fkb-content */}
       </div>
 
       {mobileOnly && (
