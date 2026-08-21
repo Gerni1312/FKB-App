@@ -65,6 +65,24 @@ const chartColors = ["#22c55e", "#f59e0b", "#ef4444", "#0ea5e9", "#8b5cf6", "#14
   const mobileOnly = typeof window !== "undefined" && window.innerWidth < 640;
   const versionHistory = [
     {
+      version: "v4.3",
+      name: "Animationen & Micro-Interactions",
+      date: "2026-08-21",
+      notes: [
+        {
+          title: "Animationen",
+          items: [
+            "Tab-Wechsel: Inhalte gleiten mit einem weichen Slide-In rein.",
+            "Dashboard-Karten erscheinen gestaffelt nacheinander.",
+            "Buttons reagieren mit leichtem Heben und Scale beim Klicken.",
+            "Cards heben sich beim Hover leicht ab.",
+            "Inputs und Selects haben einen smooth Focus-Glow.",
+            "Navigation-Tabs wechseln Farbe und Hintergrund flüssig.",
+          ],
+        },
+      ],
+    },
+    {
       version: "v4.2",
       name: "Tab-Neustrukturierung",
       date: "2026-08-21",
