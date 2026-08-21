@@ -1,7 +1,7 @@
 import React, { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { auth, db } from "./firebase";
 import { createUserWithEmailAndPassword, signInWithEmailAndPassword, signOut, onAuthStateChanged } from "firebase/auth";
-import { doc, getDoc, setDoc } from "firebase/firestore";
+import { doc, setDoc, onSnapshot } from "firebase/firestore";
 import {
   Plus,
   Wallet,
@@ -789,7 +789,8 @@ const [openVersions, setOpenVersions] = useState({
     return () => window.removeEventListener('swUpdateAvailable', handler);
   }, []);
 
-  const loadFromParsed = useCallback((parsed) => {
+  const loadFromParsed = useCallback((parsed, fromRemote = false) => {
+    if (fromRemote) skipNextWrite.current = true;
     if (parsed.transactions) setTransactions(parsed.transactions);
     if (parsed.budgets) setBudgets(parsed.budgets);
     if (parsed.recurring) setRecurring(parsed.recurring);
@@ -803,32 +804,39 @@ const [openVersions, setOpenVersions] = useState({
     if (typeof parsed.settings?.darkMode === "boolean") setDarkMode(parsed.settings.darkMode);
   }, []);
 
-  // Auth state listener — lädt Daten aus Firestore beim Login
+  // Auth state listener — Echtzeit-Sync via onSnapshot
   useEffect(() => {
-    const unsub = onAuthStateChanged(auth, async (u) => {
+    let unsubSnapshot = null;
+    const unsubAuth = onAuthStateChanged(auth, (u) => {
       setUser(u);
+      if (unsubSnapshot) { unsubSnapshot(); unsubSnapshot = null; }
       if (u) {
-        try {
-          const snap = await getDoc(doc(db, "users", u.uid));
-          if (snap.exists()) loadFromParsed(snap.data());
-          else {
-            // Fallback: localStorage
+        unsubSnapshot = onSnapshot(doc(db, "users", u.uid), (snap) => {
+          if (snap.exists()) {
+            loadFromParsed(snap.data(), true);
+          } else {
             try {
               const raw = localStorage.getItem(STORAGE_KEY);
               if (raw) loadFromParsed(JSON.parse(raw));
             } catch {}
           }
-        } catch (e) { console.error(e); }
+          setAuthLoading(false);
+          setDataLoaded(true);
+        }, (e) => { console.error(e); setAuthLoading(false); setDataLoaded(true); });
+      } else {
+        setAuthLoading(false);
+        setDataLoaded(false);
       }
-      setAuthLoading(false);
-      setDataLoaded(true);
     });
-    return unsub;
+    return () => { unsubAuth(); if (unsubSnapshot) unsubSnapshot(); };
   }, [loadFromParsed]);
 
-  // Firestore-Sync bei jeder Datenänderung (nur wenn eingeloggt)
+  const skipNextWrite = useRef(false);
+
+  // Firestore-Sync bei jeder Datenänderung (nur wenn eingeloggt, nicht beim Empfangen)
   useEffect(() => {
     if (!user || !dataLoaded) return;
+    if (skipNextWrite.current) { skipNextWrite.current = false; return; }
     const data = {
       transactions, budgets, recurring, goals, mainAccount, savingsAccount,
       settings: { currency, weeklyMode, monthOffset, payday, darkMode },
