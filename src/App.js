@@ -856,6 +856,8 @@ const selectedPeriodLabel = useMemo(() => {
   return `${format(start)} – ${format(end)}`;
 }, [monthOffset, payday]);
 
+const [editingTransactionId, setEditingTransactionId] = useState(null);
+const [editTransaction, setEditTransaction] = useState({});
 const [editingRecurringId, setEditingRecurringId] = useState(null);
 const [editRecurring, setEditRecurring] = useState({
   title: "",
@@ -1087,6 +1089,41 @@ const [openVersions, setOpenVersions] = useState({
       }
     }
     setTransactions((prev) => prev.filter((t) => t.id !== id));
+  }
+
+  function startEditTransaction(txn) {
+    setEditingTransactionId(txn.id);
+    setEditTransaction({ type: txn.type, category: txn.category, amount: txn.amount, note: txn.note || "", date: txn.date, bucket: txn.bucket, targetAccount: txn.targetAccount || "main" });
+  }
+
+  function cancelEditTransaction() {
+    setEditingTransactionId(null);
+    setEditTransaction({});
+  }
+
+  function saveEditTransaction(id) {
+    const newAmount = Number(editTransaction.amount);
+    if (!editTransaction.category || !newAmount || newAmount <= 0) return;
+    const old = transactions.find((t) => t.id === id);
+    if (old && old.affectsAccount) {
+      const oldAmt = Number(old.amount);
+      if (old.type === "income") {
+        old.targetAccount === "savings"
+          ? setSavingsAccount((p) => ({ ...p, balance: p.balance - oldAmt }))
+          : setMainAccount((p) => ({ ...p, balance: p.balance - oldAmt }));
+      } else {
+        setMainAccount((p) => ({ ...p, balance: p.balance + oldAmt }));
+      }
+      if (editTransaction.type === "income") {
+        editTransaction.targetAccount === "savings"
+          ? setSavingsAccount((p) => ({ ...p, balance: p.balance + newAmount }))
+          : setMainAccount((p) => ({ ...p, balance: p.balance + newAmount }));
+      } else {
+        setMainAccount((p) => ({ ...p, balance: p.balance - newAmount }));
+      }
+    }
+    setTransactions((prev) => prev.map((t) => t.id === id ? { ...t, ...editTransaction, amount: newAmount } : t));
+    cancelEditTransaction();
   }
 
   function addBudget() {
@@ -1643,23 +1680,57 @@ function toggleVersion(version) {
             <div style={{ display: "grid", gap: 12, marginTop: 16 }}>
               {filteredTransactions.map((t) => (
                 <div key={t.id} style={{ ...s.softCard, background: s.surface }}>
-                  <div style={{ display: "flex", justifyContent: "space-between", gap: 12, flexWrap: "wrap" }}>
-                    <div style={{ minWidth: 0 }}>
-                      <div style={{ display: "flex", gap: 8, alignItems: "center", flexWrap: "wrap" }}>
-                        <div style={{ fontWeight: 800, fontSize: 18 }}>{t.category}</div>
-                        <span style={s.badge}>{{ income: "Einnahme", fixed: "Fixkosten", flex: "Variabel", saving: "Sparen" }[t.bucket] || t.bucket}</span>
+                  {editingTransactionId === t.id ? (
+                    <div style={{ display: "grid", gap: 10 }}>
+                      <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(160px,1fr))", gap: 10 }}>
+                        <select style={s.input} value={editTransaction.type} onChange={(e) => { const isIncome = e.target.value === "income"; setEditTransaction((p) => ({ ...p, type: e.target.value, bucket: isIncome ? "income" : "flex", targetAccount: "main", category: isIncome ? "Lohn" : "Essen" })); }}>
+                          <option value="income">Einnahme</option>
+                          <option value="expense">Ausgabe</option>
+                        </select>
+                        {editTransaction.type === "income" ? (
+                          <select style={s.input} value={editTransaction.targetAccount} onChange={(e) => setEditTransaction((p) => ({ ...p, targetAccount: e.target.value }))}>
+                            <option value="main">→ Hauptkonto</option>
+                            <option value="savings">→ Sparkonto</option>
+                          </select>
+                        ) : (
+                          <select style={s.input} value={editTransaction.bucket} onChange={(e) => setEditTransaction((p) => ({ ...p, bucket: e.target.value }))}>
+                            <option value="fixed">Fixkosten</option>
+                            <option value="flex">Variable Ausgaben</option>
+                            <option value="saving">Sparen</option>
+                          </select>
+                        )}
+                        <select style={s.input} value={editTransaction.category} onChange={(e) => setEditTransaction((p) => ({ ...p, category: e.target.value }))}>
+                          {(editTransaction.type === "income" ? incomeCategories : categories).map((cat) => <option key={cat} value={cat}>{cat}</option>)}
+                        </select>
+                        <input style={s.input} type="number" placeholder="Betrag" value={editTransaction.amount} onChange={(e) => setEditTransaction((p) => ({ ...p, amount: e.target.value }))} />
+                        <input style={s.input} type="date" value={editTransaction.date} onChange={(e) => setEditTransaction((p) => ({ ...p, date: e.target.value }))} />
+                        <input style={s.input} placeholder="Notiz" value={editTransaction.note} onChange={(e) => setEditTransaction((p) => ({ ...p, note: e.target.value }))} />
                       </div>
-                      <div style={{ color: "#71717a", marginTop: 6, fontSize: 14 }}>{t.note || "Keine Notiz"}</div>
-                      <div style={{ color: "#71717a", marginTop: 8, fontSize: 12, display: "flex", gap: 12, flexWrap: "wrap" }}>
-                        <span style={{ display: "inline-flex", alignItems: "center", gap: 5 }}><CalendarDays size={12} /> {t.date}</span>
-                        <span>{t.type === "income" ? "Einnahme" : "Ausgabe"}</span>
+                      <div style={{ display: "flex", gap: 8 }}>
+                        <button style={s.button} onClick={() => saveEditTransaction(t.id)}>Speichern</button>
+                        <button style={s.buttonSecondary} onClick={cancelEditTransaction}>Abbrechen</button>
                       </div>
                     </div>
-                    <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
-                      <div style={{ fontWeight: 900, fontSize: 22, color: t.type === "income" ? "#16a34a" : "#dc2626" }}>{t.type === "income" ? "+" : "-"}{money(t.amount, currency)}</div>
-                      <button style={{ ...s.buttonSecondary, width: 44, padding: 0 }} onClick={() => deleteTransaction(t.id)}><Trash2 size={16} /></button>
+                  ) : (
+                    <div style={{ display: "flex", justifyContent: "space-between", gap: 12, flexWrap: "wrap" }}>
+                      <div style={{ minWidth: 0 }}>
+                        <div style={{ display: "flex", gap: 8, alignItems: "center", flexWrap: "wrap" }}>
+                          <div style={{ fontWeight: 800, fontSize: 18 }}>{t.category}</div>
+                          <span style={s.badge}>{{ income: "Einnahme", fixed: "Fixkosten", flex: "Variabel", saving: "Sparen" }[t.bucket] || t.bucket}</span>
+                        </div>
+                        <div style={{ color: "#71717a", marginTop: 6, fontSize: 14 }}>{t.note || "Keine Notiz"}</div>
+                        <div style={{ color: "#71717a", marginTop: 8, fontSize: 12, display: "flex", gap: 12, flexWrap: "wrap" }}>
+                          <span style={{ display: "inline-flex", alignItems: "center", gap: 5 }}><CalendarDays size={12} /> {t.date}</span>
+                          <span>{t.type === "income" ? "Einnahme" : "Ausgabe"}</span>
+                        </div>
+                      </div>
+                      <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+                        <div style={{ fontWeight: 900, fontSize: 22, color: t.type === "income" ? "#16a34a" : "#dc2626" }}>{t.type === "income" ? "+" : "-"}{money(t.amount, currency)}</div>
+                        <button style={{ ...s.buttonSecondary, width: 44, padding: 0 }} onClick={() => startEditTransaction(t)}>✏️</button>
+                        <button style={{ ...s.buttonSecondary, width: 44, padding: 0 }} onClick={() => deleteTransaction(t.id)}><Trash2 size={16} /></button>
+                      </div>
                     </div>
-                  </div>
+                  )}
                 </div>
               ))}
             </div>
