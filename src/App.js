@@ -606,6 +606,7 @@ function styles(dark = false, mobile = false) {
       borderRadius: 18,
       boxShadow: c.shadow,
       border: `1px solid ${c.borderSubtle}`,
+      transition: "box-shadow 0.2s ease",
     },
     softCard: {
       background: c.surfaceAlt,
@@ -614,6 +615,7 @@ function styles(dark = false, mobile = false) {
       padding: mobile ? 12 : 16,
       minWidth: 0,
       overflowWrap: "anywhere",
+      transition: "background 0.15s ease",
     },
     input: {
       width: "100%",
@@ -686,6 +688,7 @@ function styles(dark = false, mobile = false) {
       padding: "0 12px",
       color: c.textMuted,
       whiteSpace: "nowrap",
+      transition: "background 0.15s ease, color 0.15s ease, transform 0.13s ease",
     },
     bottomNav: {
       position: "fixed",
@@ -740,9 +743,9 @@ function SectionTitle({ title, description, action }) {
   );
 }
 
-function StatCard({ title, value, subValue, hint, icon: Icon, gradient }) {
+function StatCard({ title, value, subValue, hint, icon: Icon, gradient, className }) {
   return (
-    <div style={{ ...styles().card, overflow: "hidden" }}>
+    <div style={{ ...styles().card, overflow: "hidden" }} className={`fkb-card-hover${className ? " " + className : ""}`}>
       <div style={{ background: gradient, color: "white", padding: 20 }}>
         <div style={{ display: "flex", justifyContent: "space-between", gap: 12 }}>
           <div>
@@ -1305,11 +1308,67 @@ function toggleVersion(version) {
         @keyframes slideInRight { from { opacity: 0; transform: translateX(40px); } to { opacity: 1; transform: translateX(0); } }
         @keyframes slideInUp { from { opacity: 0; transform: translateY(30px); } to { opacity: 1; transform: translateY(0); } }
         @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
+        @keyframes tabIn { from { opacity: 0; transform: translateY(18px) scale(0.99); } to { opacity: 1; transform: translateY(0) scale(1); } }
+        @keyframes popIn { from { opacity: 0; transform: scale(0.95); } to { opacity: 1; transform: scale(1); } }
+
         .fkb-nav { animation: slideInUp 0.4s ease both; }
         .fkb-hero { animation: fadeIn 0.5s ease 0.1s both; }
         .fkb-hero-text { animation: slideInLeft 0.5s ease 0.2s both; }
         .fkb-hero-actions { animation: slideInRight 0.5s ease 0.2s both; }
         .fkb-content { animation: slideInUp 0.5s ease 0.3s both; }
+
+        /* Tab-Wechsel Animation */
+        .fkb-tab-page { animation: tabIn 0.28s cubic-bezier(0.16, 1, 0.3, 1) both; }
+
+        /* Button Transitions */
+        button {
+          transition: transform 0.13s cubic-bezier(0.16, 1, 0.3, 1),
+                      box-shadow 0.13s ease,
+                      opacity 0.13s ease,
+                      background 0.15s ease;
+        }
+        button:hover { transform: translateY(-1px); opacity: 0.9; }
+        button:active { transform: scale(0.96) translateY(0) !important; opacity: 1 !important; }
+
+        /* Nav-Tab Buttons */
+        .fkb-tab-btn:hover { opacity: 0.7 !important; transform: translateY(-1px) !important; }
+        .fkb-tab-btn-active:hover { opacity: 1 !important; transform: none !important; }
+
+        /* Primary Button Glow */
+        .fkb-btn-primary:hover { opacity: 1 !important; transform: translateY(-2px) !important; box-shadow: 0 8px 20px rgba(24,24,27,0.35) !important; }
+
+        /* Card Hover Lift */
+        .fkb-card-hover {
+          transition: transform 0.2s cubic-bezier(0.16, 1, 0.3, 1), box-shadow 0.2s ease;
+          cursor: default;
+        }
+        .fkb-card-hover:hover { transform: translateY(-3px); box-shadow: 0 16px 40px rgba(0,0,0,0.13); }
+
+        /* Input / Select Focus */
+        input, select, textarea {
+          transition: border-color 0.15s ease, box-shadow 0.15s ease;
+        }
+        input:focus, select:focus {
+          outline: none;
+          box-shadow: 0 0 0 3px rgba(24,24,27,0.1);
+        }
+
+        /* Stat cards pop-in stagger */
+        .fkb-stat-0 { animation: popIn 0.3s cubic-bezier(0.16,1,0.3,1) 0.05s both; }
+        .fkb-stat-1 { animation: popIn 0.3s cubic-bezier(0.16,1,0.3,1) 0.12s both; }
+        .fkb-stat-2 { animation: popIn 0.3s cubic-bezier(0.16,1,0.3,1) 0.19s both; }
+        .fkb-stat-3 { animation: popIn 0.3s cubic-bezier(0.16,1,0.3,1) 0.26s both; }
+        .fkb-stat-4 { animation: popIn 0.3s cubic-bezier(0.16,1,0.3,1) 0.33s both; }
+
+        /* Bottom nav buttons no hover shift */
+        .fkb-bottom-nav button:hover { transform: none; opacity: 0.75; }
+        .fkb-bottom-nav button:active { transform: scale(0.9) !important; }
+
+        /* Soft card subtle hover */
+        .fkb-soft-hover {
+          transition: transform 0.15s ease, background 0.15s ease;
+        }
+        .fkb-soft-hover:hover { transform: translateY(-1px); }
       `}</style>
       {!mobileOnly && (
         <div style={s.topNav} className="fkb-nav">
@@ -1325,7 +1384,7 @@ function toggleVersion(version) {
               ["analysis", BarChart3, "Analyse"],
               ["settings", Settings, "Settings"],
             ].map(([id, Icon, label]) => (
-              <button key={id} onClick={() => setTab(id)} style={{ ...s.tabButton, background: tab === id ? (darkMode ? "rgba(255,255,255,0.1)" : "#f4f4f5") : "transparent", color: tab === id ? s.text : s.textMuted, fontWeight: tab === id ? 700 : 500 }}>
+              <button key={id} onClick={() => setTab(id)} className={tab === id ? "fkb-tab-btn-active" : "fkb-tab-btn"} style={{ ...s.tabButton, background: tab === id ? (darkMode ? "rgba(255,255,255,0.1)" : "#f4f4f5") : "transparent", color: tab === id ? s.text : s.textMuted, fontWeight: tab === id ? 700 : 500 }}>
                 <Icon size={15} /> {label}
               </button>
             ))}
@@ -1357,7 +1416,7 @@ function toggleVersion(version) {
               <button style={s.buttonSecondary} onClick={() => setMonthOffset((m) => m - 1)}><ChevronLeft size={16} /> Voriger</button>
               <button style={s.buttonSecondary} onClick={() => setMonthOffset((m) => m + 1)}>Nächster <ChevronRight size={16} /></button>
               <button style={s.buttonSecondary} onClick={() => setMonthOffset(0)}>Heute</button>
-              <button style={{ ...s.button, background: "white", color: "#18181b" }} onClick={() => setTab("transactions")}><Plus size={16} /> Neue Buchung</button>
+              <button style={{ ...s.button, background: "white", color: "#18181b" }} className="fkb-btn-primary" onClick={() => setTab("transactions")}><Plus size={16} /> Neue Buchung</button>
             </div>
           </div>
         </div>
@@ -1385,6 +1444,7 @@ function toggleVersion(version) {
 
 
         <div className="fkb-content">
+        <div key={tab} className="fkb-tab-page">
         {tab === "dashboard" && (
           <>
             {dangerBudgets.length > 0 && (
@@ -1425,11 +1485,11 @@ function toggleVersion(version) {
             )}
 
             <div style={s.gridCards}>
-              <StatCard title="Verfügbar" value={money(totals.remaining, currency)} subValue={`${percentages.remainingPct.toFixed(0)}% vom Einkommen`} hint="Was nach allen Buchungen übrig bleibt" icon={Wallet} gradient="linear-gradient(135deg,#09090b,#3f3f46)" />
-              <StatCard title="Einkommen" value={money(totals.income, currency)} hint="Alle Einnahmen im gewählten Monat" icon={TrendingUp} gradient="linear-gradient(135deg,#166534,#22c55e)" />
-              <StatCard title="Ausgaben" value={money(totals.expenses, currency)} subValue={`${((totals.expenses / (totals.income || 1)) * 100).toFixed(0)}% vom Einkommen`} hint="Fix + variabel + sparen" icon={TrendingDown} gradient="linear-gradient(135deg,#9f1239,#ef4444)" />
-              <StatCard title="Hauptkonto" value={money(mainAccount.balance, currency)} hint="Geld für Alltag und spontane Ausgaben" icon={CreditCard} gradient="linear-gradient(135deg,#312e81,#6366f1)" />
-              <StatCard title="Sparkonto" value={money(savingsAccount.balance, currency)} subValue={`Gesamt: ${money(accountSummary.totalCash, currency)}`} hint="Stand auf dem Sparkonto" icon={Activity} gradient="linear-gradient(135deg,#b45309,#f59e0b)" />
+              <StatCard title="Verfügbar" value={money(totals.remaining, currency)} subValue={`${percentages.remainingPct.toFixed(0)}% vom Einkommen`} hint="Was nach allen Buchungen übrig bleibt" icon={Wallet} gradient="linear-gradient(135deg,#09090b,#3f3f46)" className="fkb-stat-0" />
+              <StatCard title="Einkommen" value={money(totals.income, currency)} hint="Alle Einnahmen im gewählten Monat" icon={TrendingUp} gradient="linear-gradient(135deg,#166534,#22c55e)" className="fkb-stat-1" />
+              <StatCard title="Ausgaben" value={money(totals.expenses, currency)} subValue={`${((totals.expenses / (totals.income || 1)) * 100).toFixed(0)}% vom Einkommen`} hint="Fix + variabel + sparen" icon={TrendingDown} gradient="linear-gradient(135deg,#9f1239,#ef4444)" className="fkb-stat-2" />
+              <StatCard title="Hauptkonto" value={money(mainAccount.balance, currency)} hint="Geld für Alltag und spontane Ausgaben" icon={CreditCard} gradient="linear-gradient(135deg,#312e81,#6366f1)" className="fkb-stat-3" />
+              <StatCard title="Sparkonto" value={money(savingsAccount.balance, currency)} subValue={`Gesamt: ${money(accountSummary.totalCash, currency)}`} hint="Stand auf dem Sparkonto" icon={Activity} gradient="linear-gradient(135deg,#b45309,#f59e0b)" className="fkb-stat-4" />
             </div>
 
             <div style={{ ...s.grid2, marginTop: 16, gridTemplateColumns: mobileOnly ? "1fr" : "minmax(0,2fr) minmax(280px,1fr)" }}>
@@ -2035,11 +2095,12 @@ function toggleVersion(version) {
           </div>
         </div>
       )}
+      </div>{/* fkb-tab-page */}
       </div>{/* fkb-content */}
       </div>
 
       {mobileOnly && (
-        <div style={s.bottomNav}>
+        <div style={s.bottomNav} className="fkb-bottom-nav">
           <div style={{ display: "grid", gridTemplateColumns: "repeat(7,1fr)", gap: 8 }}>
             {[
               ["dashboard", Home],
