@@ -820,6 +820,7 @@ function App() {
   const [search, setSearch] = useState("");
   const [filterBucket, setFilterBucket] = useState("all");
   const [selectedCalendarDay, setSelectedCalendarDay] = useState(null);
+  const [categoryView, setCategoryView] = useState("expense");
   const [restbudgetDismissed, setRestbudgetDismissed] = useState(false);
   const [swUpdateAvailable, setSwUpdateAvailable] = useState(false);
 
@@ -978,6 +979,14 @@ const [openVersions, setOpenVersions] = useState({
   const spendingByCategory = useMemo(() => {
     const grouped = {};
     monthTransactions.filter((t) => t.type === "expense").forEach((t) => {
+      grouped[t.category] = (grouped[t.category] || 0) + Number(t.amount);
+    });
+    return Object.entries(grouped).map(([name, value]) => ({ name, value }));
+  }, [monthTransactions]);
+
+  const incomeByCategory = useMemo(() => {
+    const grouped = {};
+    monthTransactions.filter((t) => t.type === "income").forEach((t) => {
       grouped[t.category] = (grouped[t.category] || 0) + Number(t.amount);
     });
     return Object.entries(grouped).map(([name, value]) => ({ name, value }));
@@ -2002,33 +2011,48 @@ function toggleVersion(version) {
           <div style={{ display: "grid", gap: 16 }}>
             <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(320px,1fr))", gap: 16 }}>
               <div style={{ ...s.card, padding: 18 }}>
-                <SectionTitle title="Ausgaben nach Kategorie" description="Wohin dein Geld wirklich geht" />
-                <div style={{ display: "flex", gap: 16, alignItems: "center", flexWrap: "wrap" }}>
-                  <div style={{ flex: "1 1 180px", minWidth: 160 }}>
-                    {spendingByCategory.length === 0
-                      ? <div style={{ color: s.textMuted, fontSize: 14 }}>Keine Ausgaben</div>
-                      : spendingByCategory.map((entry, index) => (
-                        <div key={entry.name} style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 8, padding: "7px 0", borderBottom: `1px solid ${s.border}` }}>
-                          <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
-                            <div style={{ width: 10, height: 10, borderRadius: "50%", background: chartColors[index % chartColors.length], flexShrink: 0 }} />
-                            <span style={{ fontSize: 13, color: s.text }}>{entry.name}</span>
-                          </div>
-                          <span style={{ fontSize: 13, fontWeight: 700, color: s.text }}>{money(entry.value, currency)}</span>
-                        </div>
-                      ))
-                    }
+                <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", flexWrap: "wrap", gap: 12, marginBottom: 14 }}>
+                  <div>
+                    <div style={{ fontWeight: 800, fontSize: 22 }}>{categoryView === "expense" ? "Ausgaben nach Kategorie" : "Einnahmen nach Kategorie"}</div>
+                    <div style={{ color: "#71717a", fontSize: 14, marginTop: 4 }}>{categoryView === "expense" ? "Wohin dein Geld wirklich geht" : "Woher dein Geld kommt"}</div>
                   </div>
-                  <div style={{ flex: "0 0 220px", height: 220 }}>
-                    <ResponsiveContainer width="100%" height="100%">
-                      <PieChart>
-                        <Pie data={spendingByCategory} dataKey="value" nameKey="name" outerRadius={90} innerRadius={50} paddingAngle={3}>
-                          {spendingByCategory.map((entry, index) => <Cell key={entry.name} fill={chartColors[index % chartColors.length]} />)}
-                        </Pie>
-                        <Tooltip formatter={(value) => money(value, currency)} />
-                      </PieChart>
-                    </ResponsiveContainer>
+                  <div style={{ display: "flex", gap: 6, background: s.surfaceAlt, borderRadius: 12, padding: 4, border: `1px solid ${s.border}` }}>
+                    <button onClick={() => setCategoryView("expense")} style={{ ...s.tabButton, height: 34, padding: "0 14px", fontSize: 13, borderRadius: 9, background: categoryView === "expense" ? (darkMode ? "rgba(255,255,255,0.12)" : "white") : "transparent", color: categoryView === "expense" ? s.text : s.textMuted, fontWeight: categoryView === "expense" ? 700 : 500, boxShadow: categoryView === "expense" ? "0 1px 4px rgba(0,0,0,0.1)" : "none" }}>Ausgaben</button>
+                    <button onClick={() => setCategoryView("income")} style={{ ...s.tabButton, height: 34, padding: "0 14px", fontSize: 13, borderRadius: 9, background: categoryView === "income" ? (darkMode ? "rgba(255,255,255,0.12)" : "white") : "transparent", color: categoryView === "income" ? s.text : s.textMuted, fontWeight: categoryView === "income" ? 700 : 500, boxShadow: categoryView === "income" ? "0 1px 4px rgba(0,0,0,0.1)" : "none" }}>Einnahmen</button>
                   </div>
                 </div>
+                {(() => {
+                  const data = categoryView === "expense" ? spendingByCategory : incomeByCategory;
+                  const emptyLabel = categoryView === "expense" ? "Keine Ausgaben" : "Keine Einnahmen";
+                  return (
+                    <div style={{ display: "flex", gap: 16, alignItems: "center", flexWrap: "wrap" }}>
+                      <div style={{ flex: "1 1 180px", minWidth: 160 }}>
+                        {data.length === 0
+                          ? <div style={{ color: s.textMuted, fontSize: 14 }}>{emptyLabel}</div>
+                          : data.map((entry, index) => (
+                            <div key={entry.name} style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 8, padding: "7px 0", borderBottom: `1px solid ${s.border}` }}>
+                              <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+                                <div style={{ width: 10, height: 10, borderRadius: "50%", background: chartColors[index % chartColors.length], flexShrink: 0 }} />
+                                <span style={{ fontSize: 13, color: s.text }}>{entry.name}</span>
+                              </div>
+                              <span style={{ fontSize: 13, fontWeight: 700, color: s.text }}>{money(entry.value, currency)}</span>
+                            </div>
+                          ))
+                        }
+                      </div>
+                      <div style={{ flex: "0 0 220px", height: 220 }}>
+                        <ResponsiveContainer width="100%" height="100%">
+                          <PieChart>
+                            <Pie data={data} dataKey="value" nameKey="name" outerRadius={90} innerRadius={50} paddingAngle={3}>
+                              {data.map((entry, index) => <Cell key={entry.name} fill={chartColors[index % chartColors.length]} />)}
+                            </Pie>
+                            <Tooltip formatter={(value) => money(value, currency)} />
+                          </PieChart>
+                        </ResponsiveContainer>
+                      </div>
+                    </div>
+                  );
+                })()}
               </div>
 
               <div style={{ ...s.card, padding: 18 }}>
