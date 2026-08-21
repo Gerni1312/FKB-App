@@ -1349,11 +1349,6 @@ function toggleVersion(version) {
               Zeitraum: {selectedPeriodLabel}
             </div>
           </div>
-          <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
-            <button style={s.buttonSecondary} onClick={exportData}><Download size={16} /> Export</button>
-            <button style={s.buttonSecondary} onClick={() => fileInputRef.current?.click()}><Upload size={16} /> Import</button>
-            <input ref={fileInputRef} type="file" accept="application/json" style={{ display: "none" }} onChange={handleImport} />
-          </div>
         </div>
 
         {showAddTransaction && (
@@ -1952,6 +1947,16 @@ function toggleVersion(version) {
                   🌙 Dunkel
                 </button>
               </div>
+            </div>
+          </div>
+
+          <div style={s.softCard}>
+            <div style={{ fontWeight: 800, color: s.text }}>Daten</div>
+            <div style={{ fontSize: 14, color: s.textMuted, marginTop: 4, marginBottom: 14 }}>Exportiere deine Daten als JSON oder importiere eine Sicherung.</div>
+            <div style={{ display: "flex", gap: 8 }}>
+              <button style={{ ...s.buttonSecondary, flex: 1, justifyContent: "center" }} onClick={exportData}><Download size={16} /> Export</button>
+              <button style={{ ...s.buttonSecondary, flex: 1, justifyContent: "center" }} onClick={() => fileInputRef.current?.click()}><Upload size={16} /> Import</button>
+              <input ref={fileInputRef} type="file" accept="application/json" style={{ display: "none" }} onChange={handleImport} />
             </div>
           </div>
 
