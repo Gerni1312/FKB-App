@@ -741,7 +741,6 @@ function App() {
   const [payday, setPayday] = useState(seedData.settings.payday);
   const [darkMode, setDarkMode] = useState(seedData.settings.darkMode);
   const [username, setUsername] = useState(seedData.settings.username);
-  const [showWelcome, setShowWelcome] = useState(false);
   const [authStep, setAuthStep] = useState(1);
   const [authUsername, setAuthUsername] = useState("");
   const s = styles(darkMode, mobileOnly);
@@ -1177,11 +1176,9 @@ function toggleVersion(version) {
     try {
       if (authMode === "login") {
         await signInWithEmailAndPassword(auth, authEmail, authPassword);
-        setShowWelcome(true);
       } else {
         await createUserWithEmailAndPassword(auth, authEmail, authPassword);
         if (authUsername.trim()) setUsername(authUsername.trim());
-        setShowWelcome(true);
       }
     } catch (e) {
       const msgs = { "auth/invalid-email": "Ungültige E-Mail-Adresse.", "auth/user-not-found": "Kein Konto mit dieser E-Mail.", "auth/wrong-password": "Falsches Passwort.", "auth/email-already-in-use": "E-Mail wird bereits verwendet.", "auth/weak-password": "Passwort muss mindestens 6 Zeichen haben.", "auth/invalid-credential": "E-Mail oder Passwort falsch." };
