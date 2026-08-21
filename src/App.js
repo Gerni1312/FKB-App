@@ -788,7 +788,6 @@ function App() {
   const [selectedCalendarDay, setSelectedCalendarDay] = useState(null);
   const [restbudgetDismissed, setRestbudgetDismissed] = useState(false);
   const [swUpdateAvailable, setSwUpdateAvailable] = useState(false);
-  const [showAddTransaction, setShowAddTransaction] = useState(false);
 
   const [payday, setPayday] = useState(seedData.settings.payday);
   const [darkMode, setDarkMode] = useState(seedData.settings.darkMode);
@@ -797,7 +796,7 @@ function App() {
   const [authUsername, setAuthUsername] = useState("");
   const s = styles(darkMode, mobileOnly);
 
-  const [newTransaction, setNewTransaction] = useState({ type: "expense", category: "Freizeit", amount: "", note: "", date: new Date().toISOString().slice(0, 10), bucket: "flex" });
+  const [newTransaction, setNewTransaction] = useState({ type: "expense", category: "Freizeit", amount: "", note: "", date: new Date().toISOString().slice(0, 10), bucket: "flex", targetAccount: "main" });
   const [newBudget, setNewBudget] = useState({ name: "", limit: "", resetMode: "monthly" });
   const [newRecurring, setNewRecurring] = useState({ title: "", amount: "", category: "", bucket: "fixed", type: "expense", dayOfMonth: "1", frequency: "monthly", monthOfYear: 1, note: "" });
   const [newGoal, setNewGoal] = useState({ name: "", target: "", current: "0" });
@@ -1017,8 +1016,14 @@ const [openVersions, setOpenVersions] = useState({
     const amount = Number(newTransaction.amount);
     if (!newTransaction.category || !amount || amount <= 0) return;
     setTransactions((prev) => [{ id: Date.now(), ...newTransaction, amount }, ...prev]);
-    setNewTransaction({ type: "expense", category: "Freizeit", amount: "", note: "", date: new Date().toISOString().slice(0, 10), bucket: "flex" });
-    setShowAddTransaction(false);
+    if (newTransaction.type === "income") {
+      if (newTransaction.targetAccount === "savings") {
+        setSavingsAccount((p) => ({ ...p, balance: p.balance + amount }));
+      } else {
+        setMainAccount((p) => ({ ...p, balance: p.balance + amount }));
+      }
+    }
+    setNewTransaction({ type: "expense", category: "Freizeit", amount: "", note: "", date: new Date().toISOString().slice(0, 10), bucket: "flex", targetAccount: "main" });
   }
 
   function deleteTransaction(id) {
@@ -1352,7 +1357,7 @@ function toggleVersion(version) {
               <button style={s.buttonSecondary} onClick={() => setMonthOffset((m) => m - 1)}><ChevronLeft size={16} /> Voriger</button>
               <button style={s.buttonSecondary} onClick={() => setMonthOffset((m) => m + 1)}>Nächster <ChevronRight size={16} /></button>
               <button style={s.buttonSecondary} onClick={() => setMonthOffset(0)}>Heute</button>
-              <button style={{ ...s.button, background: "white", color: "#18181b" }} onClick={() => setShowAddTransaction((v) => !v)}><Plus size={16} /> Neue Buchung</button>
+              <button style={{ ...s.button, background: "white", color: "#18181b" }} onClick={() => setTab("transactions")}><Plus size={16} /> Neue Buchung</button>
             </div>
           </div>
         </div>
@@ -1367,31 +1372,6 @@ function toggleVersion(version) {
           </div>
         </div>
 
-        {showAddTransaction && (
-          <div style={{ ...s.card, marginTop: 18, padding: 18 }}>
-            <SectionTitle title="Neue Transaktion" description="Schnell etwas hinzufügen" />
-            <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(180px, 1fr))", gap: 12 }}>
-              <select style={s.input} value={newTransaction.type} onChange={(e) => setNewTransaction((p) => ({ ...p, type: e.target.value, bucket: e.target.value === "income" ? "income" : p.bucket }))}>
-                <option value="income">Einkommen</option>
-                <option value="expense">Ausgabe</option>
-              </select>
-              <select style={s.input} value={newTransaction.bucket} onChange={(e) => setNewTransaction((p) => ({ ...p, bucket: e.target.value }))}>
-                <option value="income">Einkommen</option>
-                <option value="fixed">Fixkosten</option>
-                <option value="flex">Variable Ausgaben</option>
-                <option value="saving">Sparen</option>
-              </select>
-              <input style={s.input} placeholder="Kategorie" value={newTransaction.category} onChange={(e) => setNewTransaction((p) => ({ ...p, category: e.target.value }))} />
-              <input style={s.input} type="number" placeholder="Betrag" value={newTransaction.amount} onChange={(e) => setNewTransaction((p) => ({ ...p, amount: e.target.value }))} />
-              <input style={s.input} type="date" value={newTransaction.date} onChange={(e) => setNewTransaction((p) => ({ ...p, date: e.target.value }))} />
-              <input style={s.input} placeholder="Notiz" value={newTransaction.note} onChange={(e) => setNewTransaction((p) => ({ ...p, note: e.target.value }))} />
-            </div>
-            <div style={{ display: "flex", gap: 8, marginTop: 12 }}>
-              <button style={s.button} onClick={addTransaction}>Speichern</button>
-              <button style={s.buttonSecondary} onClick={() => setShowAddTransaction(false)}>Schliessen</button>
-            </div>
-          </div>
-        )}
 
         {swUpdateAvailable && (
           <div style={{ background: "linear-gradient(135deg,#1e1b4b,#312e81)", borderRadius: 20, padding: "14px 18px", marginTop: 16, display: "flex", alignItems: "center", justifyContent: "space-between", gap: 12, flexWrap: "wrap" }}>
@@ -1490,22 +1470,51 @@ function toggleVersion(version) {
         )}
 
         {tab === "transactions" && (
-          <div style={{ ...s.card, padding: 18 }}>
-            <SectionTitle title="Buchungen" description="Alles im gewählten Monat" />
-            <div style={{ display: "grid", gridTemplateColumns: mobileOnly ? "1fr" : "1fr repeat(2, minmax(180px, 220px))", gap: 12, minWidth: 0 }}>
-              <div style={{ position: "relative" }}>
-                <Search size={16} color="#71717a" style={{ position: "absolute", left: 14, top: 14 }} />
-                <input style={{ ...s.input, paddingLeft: 40 }} placeholder="Suche nach Kategorie, Notiz oder Datum" value={search} onChange={(e) => setSearch(e.target.value)} />
+          <div style={{ display: "grid", gap: 16 }}>
+            <div style={{ ...s.card, padding: 18 }}>
+              <SectionTitle title="Zahlung erfassen" description="Einnahme oder Ausgabe hinzufügen" />
+              <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(180px, 1fr))", gap: 12 }}>
+                <select style={s.input} value={newTransaction.type} onChange={(e) => setNewTransaction((p) => ({ ...p, type: e.target.value, bucket: e.target.value === "income" ? "income" : "flex", targetAccount: "main" }))}>
+                  <option value="income">Einnahme</option>
+                  <option value="expense">Ausgabe</option>
+                </select>
+                {newTransaction.type === "income" ? (
+                  <select style={s.input} value={newTransaction.targetAccount} onChange={(e) => setNewTransaction((p) => ({ ...p, targetAccount: e.target.value }))}>
+                    <option value="main">→ Hauptkonto</option>
+                    <option value="savings">→ Sparkonto</option>
+                  </select>
+                ) : (
+                  <select style={s.input} value={newTransaction.bucket} onChange={(e) => setNewTransaction((p) => ({ ...p, bucket: e.target.value }))}>
+                    <option value="fixed">Fixkosten</option>
+                    <option value="flex">Variable Ausgaben</option>
+                    <option value="saving">Sparen</option>
+                  </select>
+                )}
+                <input style={s.input} placeholder="Kategorie" value={newTransaction.category} onChange={(e) => setNewTransaction((p) => ({ ...p, category: e.target.value }))} />
+                <input style={s.input} type="number" placeholder="Betrag" value={newTransaction.amount} onChange={(e) => setNewTransaction((p) => ({ ...p, amount: e.target.value }))} />
+                <input style={s.input} type="date" value={newTransaction.date} onChange={(e) => setNewTransaction((p) => ({ ...p, date: e.target.value }))} />
+                <input style={s.input} placeholder="Notiz" value={newTransaction.note} onChange={(e) => setNewTransaction((p) => ({ ...p, note: e.target.value }))} />
               </div>
-              <select style={s.input} value={filterBucket} onChange={(e) => setFilterBucket(e.target.value)}>
-                <option value="all">Alle Buchungen</option>
-                <option value="income">Einkommen</option>
-                <option value="fixed">Fixkosten</option>
-                <option value="flex">Variable Ausgaben</option>
-                <option value="saving">Sparen</option>
-              </select>
-              <button style={{ ...s.button, width: mobileOnly ? "100%" : "auto" }} onClick={() => setShowAddTransaction(true)}>Schnell hinzufügen</button>
+              <div style={{ marginTop: 12 }}>
+                <button style={s.button} onClick={addTransaction}>Speichern</button>
+              </div>
             </div>
+
+            <div style={{ ...s.card, padding: 18 }}>
+              <SectionTitle title="Buchungen" description="Alles im gewählten Monat" />
+              <div style={{ display: "grid", gridTemplateColumns: mobileOnly ? "1fr" : "1fr minmax(180px, 220px)", gap: 12, minWidth: 0 }}>
+                <div style={{ position: "relative" }}>
+                  <Search size={16} color="#71717a" style={{ position: "absolute", left: 14, top: 14 }} />
+                  <input style={{ ...s.input, paddingLeft: 40 }} placeholder="Suche nach Kategorie, Notiz oder Datum" value={search} onChange={(e) => setSearch(e.target.value)} />
+                </div>
+                <select style={s.input} value={filterBucket} onChange={(e) => setFilterBucket(e.target.value)}>
+                  <option value="all">Alle Buchungen</option>
+                  <option value="income">Einkommen</option>
+                  <option value="fixed">Fixkosten</option>
+                  <option value="flex">Variable Ausgaben</option>
+                  <option value="saving">Sparen</option>
+                </select>
+              </div>
 
             <div style={{ display: "grid", gap: 12, marginTop: 16 }}>
               {filteredTransactions.map((t) => (
@@ -1529,6 +1538,7 @@ function toggleVersion(version) {
                   </div>
                 </div>
               ))}
+            </div>
             </div>
           </div>
         )}
