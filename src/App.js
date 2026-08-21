@@ -1411,7 +1411,7 @@ function toggleVersion(version) {
               </div>
             )}
 
-            {monthOffset === 0 && daysUntilMonthEnd <= 5 && totalBudgetRemaining > 0 && !restbudgetDismissed && (
+            {monthOffset === 0 && daysUntilMonthEnd <= 1 && totalBudgetRemaining > 0 && !restbudgetDismissed && (
               <div style={{ ...s.card, background: "linear-gradient(135deg,#ecfdf5,#d1fae5)", border: "2px solid #6ee7b7", padding: 20, marginBottom: 16 }}>
                 <div style={{ display: "flex", gap: 14, alignItems: "flex-start", flexWrap: "wrap" }}>
                   <div style={{ fontSize: 32 }}>💰</div>
