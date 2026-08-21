@@ -17,7 +17,6 @@ import {
   CreditCard,
   Download,
   Upload,
-  Trophy,
   ArrowRightLeft,
   ChevronLeft,
   ChevronRight,
@@ -65,6 +64,22 @@ const chartColors = ["#22c55e", "#f59e0b", "#ef4444", "#0ea5e9", "#8b5cf6", "#14
 // VERSION
   const mobileOnly = typeof window !== "undefined" && window.innerWidth < 640;
   const versionHistory = [
+    {
+      version: "v4.2",
+      name: "Tab-Neustrukturierung",
+      date: "2026-08-21",
+      notes: [
+        {
+          title: "Navigation",
+          items: [
+            "Neuer Tab «Konten»: Hauptkonto, Sparkonto und Ausleihen übersichtlich gebündelt.",
+            "Neuer Tab «Sparen»: Sparplan und Sparziele an einem Ort.",
+            "«Budgets» zeigt jetzt nur noch die Budgets – klar und fokussiert.",
+            "Der frühere «Ziele»-Tab wurde aufgeteilt: Konten → Konten-Tab, Ziele → Sparen-Tab.",
+          ],
+        },
+      ],
+    },
     {
       version: "v4.1",
       name: "Persönlicher Hero",
@@ -1298,8 +1313,9 @@ function toggleVersion(version) {
             {[
               ["dashboard", Home, "Dashboard"],
               ["transactions", CreditCard, "Buchungen"],
+              ["konten", Wallet, "Konten"],
               ["budgets", Target, "Budgets"],
-              ["goals", Trophy, "Ziele"],
+              ["sparen", TrendingUp, "Sparen"],
               ["calendar", Calendar, "Kalender"],
               ["analysis", BarChart3, "Analyse"],
               ["settings", Settings, "Settings"],
@@ -1520,21 +1536,6 @@ function toggleVersion(version) {
         {tab === "budgets" && (
           <div style={{ display: "grid", gap: 16 }}>
 
-            <div style={{ ...s.card, background: savingPlanStatus.bg, border: `2px solid ${savingPlanStatus.border}`, padding: 18 }}>
-              <SectionTitle title="Sparplan" description="Dein monatliches Sparziel auf einen Blick" />
-              <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", gap: 12, flexWrap: "wrap", marginBottom: 12 }}>
-                <div>
-                  <div style={{ fontSize: 28, fontWeight: 900, color: savingPlanStatus.color }}>{money(savingPlanStatus.actual, currency)}</div>
-                  <div style={{ fontSize: 14, color: s.textMuted, marginTop: 4 }}>von {money(savingPlanStatus.goal, currency)} Sparziel diesen Monat</div>
-                </div>
-                <span style={{ ...s.badge, color: savingPlanStatus.color, borderColor: savingPlanStatus.border, background: savingPlanStatus.bg, fontSize: 14, padding: "8px 14px" }}>{savingPlanStatus.label}</span>
-              </div>
-              <ProgressBar value={savingPlanStatus.progress} color={savingPlanStatus.color} dark={darkMode} />
-              {savingPlanStatus.goal === 0 && (
-                <div style={{ fontSize: 13, color: "#71717a", marginTop: 10 }}>Kein monatliches Sparziel gesetzt. Trag es im Ziele-Tab unter "Konten" ein.</div>
-              )}
-            </div>
-
             <div style={{ ...s.card, padding: 18 }}>
               <SectionTitle title="Budget hinzufügen" description="Lege Limits pro Kategorie fest" />
               <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(180px,1fr))", gap: 12 }}>
@@ -1710,17 +1711,8 @@ function toggleVersion(version) {
           </div>
         )}
 
-        {tab === "goals" && (
+        {tab === "konten" && (
           <div style={{ display: "grid", gap: 16 }}>
-            <div style={{ ...s.card, padding: 18 }}>
-              <SectionTitle title="Sparziel hinzufügen" description="So siehst du, worauf du sparst und wie weit du bist" />
-              <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(180px,1fr))", gap: 12 }}>
-                <input style={s.input} placeholder="z. B. Notgroschen" value={newGoal.name} onChange={(e) => setNewGoal((p) => ({ ...p, name: e.target.value }))} />
-                <input style={s.input} type="number" placeholder="Zielbetrag" value={newGoal.target} onChange={(e) => setNewGoal((p) => ({ ...p, target: e.target.value }))} />
-                <input style={s.input} type="number" placeholder="Aktuell" value={newGoal.current} onChange={(e) => setNewGoal((p) => ({ ...p, current: e.target.value }))} />
-                <button style={s.button} onClick={addGoal}>Erstellen</button>
-              </div>
-            </div>
 
             <div style={{ ...s.card, padding: 18 }}>
               <SectionTitle title="Konten, Sparkonto & Ausleihen" description="Hier stellst du direkt ein, wie viel auf Hauptkonto und Sparkonto liegt" />
@@ -1769,6 +1761,37 @@ function toggleVersion(version) {
 
                   <button style={{ ...s.buttonSecondary, width: "100%", marginTop: 14, whiteSpace: "normal", height: "auto", padding: "12px 16px", lineHeight: 1.4, textAlign: "center" }} onClick={settleBorrowedSavings}>Monatsanfang ausgleichen + Zins zurücklegen</button>
                 </div>
+              </div>
+            </div>
+
+          </div>
+        )}
+
+        {tab === "sparen" && (
+          <div style={{ display: "grid", gap: 16 }}>
+
+            <div style={{ ...s.card, background: savingPlanStatus.bg, border: `2px solid ${savingPlanStatus.border}`, padding: 18 }}>
+              <SectionTitle title="Sparplan" description="Dein monatliches Sparziel auf einen Blick" />
+              <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", gap: 12, flexWrap: "wrap", marginBottom: 12 }}>
+                <div>
+                  <div style={{ fontSize: 28, fontWeight: 900, color: savingPlanStatus.color }}>{money(savingPlanStatus.actual, currency)}</div>
+                  <div style={{ fontSize: 14, color: s.textMuted, marginTop: 4 }}>von {money(savingPlanStatus.goal, currency)} Sparziel diesen Monat</div>
+                </div>
+                <span style={{ ...s.badge, color: savingPlanStatus.color, borderColor: savingPlanStatus.border, background: savingPlanStatus.bg, fontSize: 14, padding: "8px 14px" }}>{savingPlanStatus.label}</span>
+              </div>
+              <ProgressBar value={savingPlanStatus.progress} color={savingPlanStatus.color} dark={darkMode} />
+              {savingPlanStatus.goal === 0 && (
+                <div style={{ fontSize: 13, color: "#71717a", marginTop: 10 }}>Kein monatliches Sparziel gesetzt. Trag es im Konten-Tab ein.</div>
+              )}
+            </div>
+
+            <div style={{ ...s.card, padding: 18 }}>
+              <SectionTitle title="Sparziel hinzufügen" description="So siehst du, worauf du sparst und wie weit du bist" />
+              <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(180px,1fr))", gap: 12 }}>
+                <input style={s.input} placeholder="z. B. Notgroschen" value={newGoal.name} onChange={(e) => setNewGoal((p) => ({ ...p, name: e.target.value }))} />
+                <input style={s.input} type="number" placeholder="Zielbetrag" value={newGoal.target} onChange={(e) => setNewGoal((p) => ({ ...p, target: e.target.value }))} />
+                <input style={s.input} type="number" placeholder="Aktuell" value={newGoal.current} onChange={(e) => setNewGoal((p) => ({ ...p, current: e.target.value }))} />
+                <button style={s.button} onClick={addGoal}>Erstellen</button>
               </div>
             </div>
 
@@ -2007,12 +2030,13 @@ function toggleVersion(version) {
 
       {mobileOnly && (
         <div style={s.bottomNav}>
-          <div style={{ display: "grid", gridTemplateColumns: "repeat(6,1fr)", gap: 8 }}>
+          <div style={{ display: "grid", gridTemplateColumns: "repeat(7,1fr)", gap: 8 }}>
             {[
               ["dashboard", Home],
               ["transactions", CreditCard],
+              ["konten", Wallet],
               ["budgets", Target],
-              ["goals", Trophy],
+              ["sparen", TrendingUp],
               ["calendar", Calendar],
               ["settings", Settings],
             ].map(([id, Icon]) => (
