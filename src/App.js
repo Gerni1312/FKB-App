@@ -963,16 +963,20 @@ const [openVersions, setOpenVersions] = useState({
     const updatedItems = new Map();
     for (const r of recurringToApply) {
       const autoDate = getRecurringDateForMonth(selectedMonthDate, r.dayOfMonth);
-      const transactionExists = transactions.some((t) => t.note === `[AUTO] ${r.title}` && t.date === autoDate && t.amount === Number(r.amount) && t.category === r.category && t.bucket === r.bucket);
+      const transactionExists = transactions.some((t) => t.auto && t.note === r.title && t.date === autoDate && t.amount === Number(r.amount) && t.category === r.category);
       if (!transactionExists) {
-        newTransactions.push({ id: Date.now() + Math.random(), type: r.type, category: r.category, amount: Number(r.amount), note: `[AUTO] ${r.title}`, date: autoDate, bucket: r.bucket });
+        newTransactions.push({ id: Date.now() + Math.random(), type: r.type, category: r.category, amount: Number(r.amount), note: r.title, date: autoDate, bucket: r.bucket, affectsAccount: true, auto: true });
       }
       updatedItems.set(r.id, { ...r, lastAppliedMonth: selectedMonthKey });
     }
 
     // Functional updater: arbeitet immer mit dem aktuellsten Stand
     setRecurring((prev) => prev.map((r) => updatedItems.has(r.id) ? updatedItems.get(r.id) : r));
-    if (newTransactions.length > 0) setTransactions((prev) => [...newTransactions, ...prev]);
+    if (newTransactions.length > 0) {
+      setTransactions((prev) => [...newTransactions, ...prev]);
+      const balanceDelta = newTransactions.reduce((sum, t) => sum + (t.type === "income" ? t.amount : -t.amount), 0);
+      if (balanceDelta !== 0) setMainAccount((p) => ({ ...p, balance: p.balance + balanceDelta }));
+    }
   }, [selectedMonthKey, selectedMonthDate, recurring, transactions]);
 
   const monthTransactions = useMemo(
@@ -1163,6 +1167,7 @@ const [openVersions, setOpenVersions] = useState({
   function deleteRecurring(id) {
     setRecurring((prev) => prev.filter((r) => r.id !== id));
   }
+
 
   function addGoal() {
     const target = Number(newGoal.target);
@@ -1729,6 +1734,7 @@ function toggleVersion(version) {
                         <div style={{ display: "flex", gap: 8, alignItems: "center", flexWrap: "wrap" }}>
                           <div style={{ fontWeight: 800, fontSize: 18 }}>{t.category}</div>
                           <span style={s.badge}>{{ income: "Einnahme", fixed: "Fixkosten", flex: "Variabel", saving: "Sparen" }[t.bucket] || t.bucket}</span>
+                          {t.auto && <span style={{ fontSize: 11, background: darkMode ? "rgba(14,165,233,0.15)" : "#e0f2fe", color: darkMode ? "#7dd3fc" : "#0369a1", borderRadius: 6, padding: "2px 7px", fontWeight: 600 }}>🔁 Wiederkehrend</span>}
                         </div>
                         <div style={{ color: "#71717a", marginTop: 6, fontSize: 14 }}>{t.note || "Keine Notiz"}</div>
                         <div style={{ color: "#71717a", marginTop: 8, fontSize: 12, display: "flex", gap: 12, flexWrap: "wrap" }}>
