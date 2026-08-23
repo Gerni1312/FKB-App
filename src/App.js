@@ -2181,51 +2181,33 @@ function toggleVersion(version) {
           <div style={{ display: "grid", gap: 16 }}>
 
             <div style={{ ...s.card, padding: 18 }}>
-              <SectionTitle title="Konten, Sparkonto & Ausleihen" description="Hier stellst du direkt ein, wie viel auf Hauptkonto und Sparkonto liegt" />
-              <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(320px,1fr))", gap: 16 }}>
+              <SectionTitle title="Konten" description="Kontostände direkt anpassen und Geld zwischen Konten verschieben" />
+              <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(300px,1fr))", gap: 16 }}>
                 <div style={s.softCard}>
+                  <div style={{ fontWeight: 700, fontSize: 13, color: s.textMuted, textTransform: "uppercase", letterSpacing: "0.05em", marginBottom: 12 }}>Kontostände</div>
                   <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12 }}>
-                    <div><div style={{ fontSize: 13, color: "#71717a", marginBottom: 6 }}>Stand Hauptkonto</div><input style={s.input} type="number" value={mainAccount.balance} onChange={(e) => setMainAccount((p) => ({ ...p, balance: Number(e.target.value || 0) }))} /></div>
-                    <div><div style={{ fontSize: 13, color: "#71717a", marginBottom: 6 }}>Stand Sparkonto</div><input style={s.input} type="number" value={savingsAccount.balance} onChange={(e) => setSavingsAccount((p) => ({ ...p, balance: Number(e.target.value || 0) }))} /></div>
-                    <div><div style={{ fontSize: 13, color: "#71717a", marginBottom: 6 }}>Geplant pro Monat</div><input style={s.input} type="number" value={savingsAccount.plannedMonthlyDeposit} onChange={(e) => setSavingsAccount((p) => ({ ...p, plannedMonthlyDeposit: Number(e.target.value || 0) }))} /></div>
-                    <div><div style={{ fontSize: 13, color: "#71717a", marginBottom: 6 }}>Aktuell ausgeliehen</div><input style={s.input} type="number" value={savingsAccount.borrowedOut} onChange={(e) => setSavingsAccount((p) => ({ ...p, borrowedOut: Number(e.target.value || 0) }))} /></div>
-                    <div><div style={{ fontSize: 13, color: "#71717a", marginBottom: 6 }}>Erwarteter Zins</div><input style={s.input} type="number" value={savingsAccount.expectedInterest} onChange={(e) => setSavingsAccount((p) => ({ ...p, expectedInterest: Number(e.target.value || 0) }))} /></div>
+                    <div><div style={{ fontSize: 13, color: s.textMuted, marginBottom: 6 }}>Stand Hauptkonto</div><input style={s.input} type="number" value={mainAccount.balance} onChange={(e) => setMainAccount((p) => ({ ...p, balance: Number(e.target.value || 0) }))} /></div>
+                    <div><div style={{ fontSize: 13, color: s.textMuted, marginBottom: 6 }}>Stand Sparkonto</div><input style={s.input} type="number" value={savingsAccount.balance} onChange={(e) => setSavingsAccount((p) => ({ ...p, balance: Number(e.target.value || 0) }))} /></div>
+                    <div style={{ gridColumn: "span 2" }}><div style={{ fontSize: 13, color: s.textMuted, marginBottom: 6 }}>Geplant pro Monat (Sparen)</div><input style={s.input} type="number" value={savingsAccount.plannedMonthlyDeposit} onChange={(e) => setSavingsAccount((p) => ({ ...p, plannedMonthlyDeposit: Number(e.target.value || 0) }))} /></div>
                   </div>
-
-                  <div style={{ display: "grid", gridTemplateColumns: mobileOnly ? "1fr 1fr" : "repeat(4,1fr)", gap: 10, marginTop: 14, minWidth: 0 }}>
-                    <div style={{ ...s.softCard, background: s.surface }}><div style={{ fontSize: 13, color: s.textMuted }}>Hauptkonto</div><div style={{ fontWeight: 800, marginTop: 5 }}>{money(mainAccount.balance, currency)}</div></div>
-                    <div style={{ ...s.softCard, background: s.surface }}><div style={{ fontSize: 13, color: s.textMuted }}>Frei auf Sparkonto</div><div style={{ fontWeight: 800, marginTop: 5 }}>{money(savingsSummary.availableOnSavings, currency)}</div></div>
-                    <div style={{ ...s.softCard, background: s.surface }}><div style={{ fontSize: 13, color: s.textMuted }}>Kommt zurück</div><div style={{ fontWeight: 800, marginTop: 5 }}>{money(savingsSummary.expectedBackNextMonth, currency)}</div></div>
-                    <div style={{ ...s.softCard, background: s.surface }}><div style={{ fontSize: 13, color: s.textMuted }}>Total beide Konten</div><div style={{ fontWeight: 800, marginTop: 5 }}>{money(accountSummary.totalCash, currency)}</div></div>
+                  <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: 10, marginTop: 14 }}>
+                    <div style={{ ...s.softCard, background: s.surface }}><div style={{ fontSize: 12, color: s.textMuted }}>Hauptkonto</div><div style={{ fontWeight: 800, marginTop: 4 }}>{money(mainAccount.balance, currency)}</div></div>
+                    <div style={{ ...s.softCard, background: s.surface }}><div style={{ fontSize: 12, color: s.textMuted }}>Sparkonto</div><div style={{ fontWeight: 800, marginTop: 4 }}>{money(savingsAccount.balance, currency)}</div></div>
+                    <div style={{ ...s.softCard, background: s.surface }}><div style={{ fontSize: 12, color: s.textMuted }}>Gesamt</div><div style={{ fontWeight: 800, marginTop: 4 }}>{money(accountSummary.totalCash, currency)}</div></div>
                   </div>
                 </div>
 
                 <div style={s.softCard}>
-                  <div style={{ fontWeight: 800, marginBottom: 10 }}>Bewegung zwischen Hauptkonto und Sparkonto</div>
-                  <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(150px,1fr))", gap: 12 }}>
+                  <div style={{ fontWeight: 700, fontSize: 13, color: s.textMuted, textTransform: "uppercase", letterSpacing: "0.05em", marginBottom: 12 }}>Geld verschieben</div>
+                  <div style={{ display: "grid", gap: 10 }}>
                     <select style={s.input} value={savingsTransfer.type} onChange={(e) => setSavingsTransfer((p) => ({ ...p, type: e.target.value }))}>
-                      <option value="deposit">Auf Sparkonto</option>
-                      <option value="withdraw">Zurück aufs Hauptkonto</option>
+                      <option value="deposit">Hauptkonto → Sparkonto</option>
+                      <option value="withdraw">Sparkonto → Hauptkonto</option>
                     </select>
                     <input style={s.input} type="number" placeholder="Betrag" value={savingsTransfer.amount} onChange={(e) => setSavingsTransfer((p) => ({ ...p, amount: e.target.value }))} />
-                    <input style={s.input} placeholder="Notiz" value={savingsTransfer.note} onChange={(e) => setSavingsTransfer((p) => ({ ...p, note: e.target.value }))} />
+                    <input style={s.input} placeholder="Notiz (optional)" value={savingsTransfer.note} onChange={(e) => setSavingsTransfer((p) => ({ ...p, note: e.target.value }))} />
                     <button style={s.button} onClick={handleSavingsTransfer}><ArrowRightLeft size={16} /> Buchen</button>
                   </div>
-
-                  <div style={{ ...s.softCard, marginTop: 14, background: darkMode ? "rgba(29,78,216,0.12)" : "#eff6ff", borderColor: darkMode ? "rgba(29,78,216,0.25)" : "#bfdbfe" }}>
-                    <div style={{ fontWeight: 800 }}>Wie das Ausleihen funktioniert</div>
-                    <div style={{ fontSize: 14, color: s.textMuted, marginTop: 6 }}>Beim Ausleihen wird Geld vom Sparkonto aufs Hauptkonto verschoben. Beim Ausgleich am Monatsanfang geht der geliehene Betrag plus Zins wieder zurück aufs Sparkonto.</div>
-                  </div>
-
-                  <div style={{ fontWeight: 800, marginTop: 20, marginBottom: 10 }}>Vom Sparkonto ausleihen</div>
-                  <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(150px,1fr))", gap: 12 }}>
-                    <input style={s.input} type="number" placeholder="Betrag" value={borrowForm.amount} onChange={(e) => setBorrowForm((p) => ({ ...p, amount: e.target.value }))} />
-                    <input style={s.input} type="number" placeholder="Zins / Plus" value={borrowForm.interest} onChange={(e) => setBorrowForm((p) => ({ ...p, interest: e.target.value }))} />
-                    <input style={s.input} placeholder="Notiz" value={borrowForm.note} onChange={(e) => setBorrowForm((p) => ({ ...p, note: e.target.value }))} />
-                    <button style={s.button} onClick={handleBorrowFromSavings}>Ausleihen</button>
-                  </div>
-
-                  <button style={{ ...s.buttonSecondary, width: "100%", marginTop: 14, whiteSpace: "normal", height: "auto", padding: "12px 16px", lineHeight: 1.4, textAlign: "center" }} onClick={settleBorrowedSavings}>Monatsanfang ausgleichen + Zins zurücklegen</button>
                 </div>
               </div>
             </div>
