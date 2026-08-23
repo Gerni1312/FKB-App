@@ -526,7 +526,7 @@ function getBudgetSpentForRange(transactions, budget, monthOffset, payday) {
 
 function getGoalProgress(goal) {
   if (!goal.target || goal.target <= 0) return 0;
-  return Math.min((goal.current / goal.target) * 100, 100);
+  return Math.min(((goal.allocated || 0) / goal.target) * 100, 100);
 }
 
 function getBudgetStatus(progress, dark = false) {
@@ -850,8 +850,7 @@ function App() {
   const [newTransaction, setNewTransaction] = useState({ type: "expense", category: "Essen", amount: "", note: "", date: new Date().toISOString().slice(0, 10), bucket: "flex", targetAccount: "main" });
   const [newBudget, setNewBudget] = useState({ name: "", category: "Freizeit", limit: "", resetMode: "monthly" });
   const [newRecurring, setNewRecurring] = useState({ title: "", amount: "", category: "", bucket: "fixed", type: "expense", dayOfMonth: "1", frequency: "monthly", monthOfYear: 1, note: "" });
-  const [newGoal, setNewGoal] = useState({ name: "", target: "", current: "0" });
-  const [goalContribution, setGoalContribution] = useState({});
+  const [newGoal, setNewGoal] = useState({ name: "", target: "" });
   const [savingsTransfer, setSavingsTransfer] = useState({ type: "deposit", amount: "", note: "" });
   const [borrowForm, setBorrowForm] = useState({ amount: "", interest: "", note: "" });
 
@@ -1079,6 +1078,9 @@ const [openVersions, setOpenVersions] = useState({
     return { availableOnSavings, expectedBackNextMonth, projectedNextMonth };
   }, [savingsAccount]);
 
+  const totalAllocated = useMemo(() => goals.reduce((s, g) => s + Number(g.allocated || 0), 0), [goals]);
+  const freeOnSavings = Math.max(Number(savingsAccount.balance || 0) - totalAllocated, 0);
+
   const percentages = useMemo(() => {
     const incomeBase = totals.income > 0 ? totals.income : 1;
     return {
@@ -1208,30 +1210,18 @@ const [openVersions, setOpenVersions] = useState({
 
   function addGoal() {
     const target = Number(newGoal.target);
-    const current = Number(newGoal.current);
     if (!newGoal.name || !target || target <= 0) return;
-    setGoals((prev) => [...prev, { id: Date.now(), name: newGoal.name, target, current }]);
-    setNewGoal({ name: "", target: "", current: "0" });
+    setGoals((prev) => [...prev, { id: Date.now(), name: newGoal.name, target, allocated: 0 }]);
+    setNewGoal({ name: "", target: "" });
   }
 
   function deleteGoal(id) {
     setGoals((prev) => prev.filter((g) => g.id !== id));
   }
 
-  function updateGoalCurrent(id, value) {
-    const amount = Number(value);
-    setGoals((prev) => prev.map((g) => (g.id === id ? { ...g, current: Number.isNaN(amount) ? g.current : amount } : g)));
-  }
-
-  function addGoalContribution(goalId) {
-    const amount = Number(goalContribution[goalId] || 0);
-    if (!amount || amount <= 0) return;
-    const goal = goals.find((g) => g.id === goalId);
-    if (!goal) return;
-    setGoals((prev) => prev.map((g) => (g.id === goalId ? { ...g, current: g.current + amount } : g)));
-    setTransactions((prev) => [{ id: Date.now() + Math.random(), type: "expense", category: "Sparziel", amount, note: `Zielbeitrag: ${goal.name}`, date: new Date().toISOString().slice(0, 10), bucket: "saving" }, ...prev]);
-    setSavingsAccount((prev) => ({ ...prev, balance: Number(prev.balance || 0) + amount }));
-    setGoalContribution((prev) => ({ ...prev, [goalId]: "" }));
+  function updateGoalAllocated(id, value) {
+    const amount = Math.max(0, Number(value) || 0);
+    setGoals((prev) => prev.map((g) => (g.id === id ? { ...g, allocated: amount } : g)));
   }
 
   function handleSavingsTransfer() {
@@ -2051,34 +2041,44 @@ function toggleVersion(version) {
             <div style={{ ...s.card, padding: 18 }}>
               <SectionTitle title="Sparziel hinzufügen" description="So siehst du, worauf du sparst und wie weit du bist" />
               <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(180px,1fr))", gap: 12 }}>
-                <input style={s.input} placeholder="z. B. Notgroschen" value={newGoal.name} onChange={(e) => setNewGoal((p) => ({ ...p, name: e.target.value }))} />
+                <input style={s.input} placeholder="z. B. Neues Handy" value={newGoal.name} onChange={(e) => setNewGoal((p) => ({ ...p, name: e.target.value }))} />
                 <input style={s.input} type="number" placeholder="Zielbetrag" value={newGoal.target} onChange={(e) => setNewGoal((p) => ({ ...p, target: e.target.value }))} />
-                <input style={s.input} type="number" placeholder="Aktuell" value={newGoal.current} onChange={(e) => setNewGoal((p) => ({ ...p, current: e.target.value }))} />
                 <button style={s.button} onClick={addGoal}>Erstellen</button>
               </div>
             </div>
 
+            {goals.length > 0 && (
+              <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(160px,1fr))", gap: 12 }}>
+                <div style={{ ...s.softCard, background: darkMode ? "rgba(22,163,74,0.12)" : "#ecfdf5", borderColor: darkMode ? "rgba(22,163,74,0.25)" : "#bbf7d0" }}><div style={{ color: darkMode ? "#86efac" : "#15803d", fontSize: 13 }}>Sparkonto</div><div style={{ fontWeight: 900, fontSize: 22, marginTop: 6 }}>{money(savingsAccount.balance, currency)}</div></div>
+                <div style={{ ...s.softCard, background: darkMode ? "rgba(99,102,241,0.12)" : "#ede9fe", borderColor: darkMode ? "rgba(99,102,241,0.25)" : "#c4b5fd" }}><div style={{ color: darkMode ? "#a5b4fc" : "#6d28d9", fontSize: 13 }}>Zugewiesen</div><div style={{ fontWeight: 900, fontSize: 22, marginTop: 6 }}>{money(totalAllocated, currency)}</div></div>
+                <div style={{ ...s.softCard, background: s.surface }}><div style={{ color: s.textMuted, fontSize: 13 }}>Frei (nicht zugewiesen)</div><div style={{ fontWeight: 900, fontSize: 22, marginTop: 6, color: freeOnSavings < 0 ? "#dc2626" : s.text }}>{money(freeOnSavings, currency)}</div></div>
+              </div>
+            )}
+
             <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(320px,1fr))", gap: 16 }}>
               {goals.length === 0 && <EmptyState icon="💰" text="Noch keine Sparziele" sub="Definiere oben worauf du sparst." />}
               {goals.map((goal) => {
+                const allocated = Number(goal.allocated || 0);
                 const progress = getGoalProgress(goal);
+                const maxAlloc = allocated + freeOnSavings;
                 return (
                   <div key={goal.id} style={{ ...s.card, padding: 18 }}>
                     <div style={{ display: "flex", justifyContent: "space-between", gap: 12 }}>
                       <div>
                         <div style={{ fontWeight: 800, fontSize: 20 }}>{goal.name}</div>
-                        <div style={{ fontSize: 14, color: "#71717a", marginTop: 4 }}>{money(goal.current, currency)} von {money(goal.target, currency)}</div>
+                        <div style={{ fontSize: 14, color: s.textMuted, marginTop: 4 }}>{money(allocated, currency)} von {money(goal.target, currency)} zugewiesen</div>
                       </div>
                       <button style={{ ...s.buttonSecondary, width: 44, padding: 0 }} onClick={() => deleteGoal(goal.id)}><Trash2 size={16} /></button>
                     </div>
                     <ProgressBar value={progress} color="#16a34a" dark={darkMode} />
-                    <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12, marginTop: 12 }}>
-                      <input style={s.input} type="number" value={goal.current} onChange={(e) => updateGoalCurrent(goal.id, e.target.value)} />
-                      <div style={{ ...s.softCard, background: darkMode ? "rgba(22,163,74,0.12)" : "#ecfdf5", borderColor: darkMode ? "rgba(22,163,74,0.25)" : "#bbf7d0" }}><div style={{ color: darkMode ? "#86efac" : "#15803d", fontSize: 13 }}>Noch nötig</div><div style={{ fontWeight: 800, marginTop: 5 }}>{money(Math.max(goal.target - goal.current, 0), currency)}</div></div>
+                    <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(110px,1fr))", gap: 10, marginTop: 14 }}>
+                      <div style={s.softCard}><div style={{ color: s.textMuted, fontSize: 13 }}>Zielbetrag</div><div style={{ fontWeight: 800, marginTop: 5 }}>{money(goal.target, currency)}</div></div>
+                      <div style={{ ...s.softCard, background: darkMode ? "rgba(22,163,74,0.12)" : "#ecfdf5", borderColor: darkMode ? "rgba(22,163,74,0.25)" : "#bbf7d0" }}><div style={{ color: darkMode ? "#86efac" : "#15803d", fontSize: 13 }}>Zugewiesen</div><div style={{ fontWeight: 800, marginTop: 5 }}>{money(allocated, currency)}</div></div>
+                      <div style={s.softCard}><div style={{ color: s.textMuted, fontSize: 13 }}>Noch nötig</div><div style={{ fontWeight: 800, marginTop: 5 }}>{money(Math.max(goal.target - allocated, 0), currency)}</div></div>
                     </div>
-                    <div style={{ display: "grid", gridTemplateColumns: "1fr auto", gap: 12, marginTop: 12 }}>
-                      <input style={s.input} type="number" placeholder="Beitrag" value={goalContribution[goal.id] || ""} onChange={(e) => setGoalContribution((prev) => ({ ...prev, [goal.id]: e.target.value }))} />
-                      <button style={s.button} onClick={() => addGoalContribution(goal.id)}>Beitragen</button>
+                    <div style={{ marginTop: 14 }}>
+                      <div style={{ fontSize: 13, color: s.textMuted, marginBottom: 6 }}>Vom Sparkonto zuweisen (max. {money(maxAlloc, currency)})</div>
+                      <input style={s.input} type="number" min="0" max={maxAlloc} value={allocated || ""} placeholder="0" onChange={(e) => updateGoalAllocated(goal.id, Math.min(Number(e.target.value), maxAlloc))} />
                     </div>
                   </div>
                 );
