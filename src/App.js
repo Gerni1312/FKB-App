@@ -788,7 +788,21 @@ function SectionTitle({ title, description, action }) {
   );
 }
 
-function StatCard({ title, value, subValue, hint, icon: Icon, gradient, className }) {
+function MoMBadge({ current, previous }) {
+  if (!previous || previous === 0) return null;
+  const diff = current - previous;
+  const pct = Math.abs((diff / previous) * 100).toFixed(0);
+  const up = diff > 0;
+  const neutral = diff === 0;
+  if (neutral) return null;
+  return (
+    <span style={{ fontSize: 11, fontWeight: 700, padding: "2px 7px", borderRadius: 6, background: up ? "rgba(22,163,74,0.15)" : "rgba(220,38,38,0.15)", color: up ? "#16a34a" : "#dc2626" }}>
+      {up ? "↑" : "↓"} {pct}% vs. Vormonat
+    </span>
+  );
+}
+
+function StatCard({ title, value, subValue, hint, icon: Icon, gradient, className, badge }) {
   return (
     <div style={{ ...styles().card, overflow: "hidden" }} className={`fkb-card-hover${className ? " " + className : ""}`}>
       <div style={{ background: gradient, color: "white", padding: 20 }}>
@@ -797,7 +811,7 @@ function StatCard({ title, value, subValue, hint, icon: Icon, gradient, classNam
             <div style={{ fontSize: 14, opacity: 0.82 }}>{title}</div>
             <div style={{ fontSize: 28, fontWeight: 900, marginTop: 6, lineHeight: 1.1 }}>{value}</div>
             {subValue ? <div style={{ fontSize: 14, opacity: 0.82, marginTop: 6 }}>{subValue}</div> : null}
-            <div style={{ fontSize: 12, opacity: 0.7, marginTop: 10 }}>{hint}</div>
+            {badge ? <div style={{ marginTop: 10 }}>{badge}</div> : <div style={{ fontSize: 12, opacity: 0.7, marginTop: 10 }}>{hint}</div>}
           </div>
           <div style={{ width: 44, height: 44, borderRadius: 18, background: "rgba(255,255,255,0.15)", display: "grid", placeItems: "center", flexShrink: 0 }}>
             <Icon size={20} />
@@ -997,6 +1011,13 @@ const [openVersions, setOpenVersions] = useState({
     const expenses = monthTransactions.filter((t) => t.type === "expense").reduce((sum, t) => sum + Number(t.amount), 0);
     return { income, fixed, flex, saving, expenses, remaining: income - expenses };
   }, [monthTransactions]);
+
+  const lastMonthTotals = useMemo(() => {
+    const prev = transactions.filter((t) => inSelectedMonth(t.date, monthOffset - 1, payday));
+    const income = prev.filter((t) => t.type === "income").reduce((s, t) => s + Number(t.amount), 0);
+    const expenses = prev.filter((t) => t.type === "expense").reduce((s, t) => s + Number(t.amount), 0);
+    return { income, expenses, remaining: income - expenses };
+  }, [transactions, monthOffset, payday]);
 
   const spendingByCategory = useMemo(() => {
     const grouped = {};
@@ -1776,9 +1797,9 @@ function toggleVersion(version) {
 
             <div style={s.gridCards}>
               <StatCard title="Verfügbar" value={money(mainAccount.balance, currency)} subValue={`Gesamt: ${money(accountSummary.totalCash, currency)}`} hint="Aktueller Stand auf dem Hauptkonto" icon={Wallet} gradient="linear-gradient(135deg,#09090b,#3f3f46)" className="fkb-stat-0" />
-              <StatCard title="Einkommen" value={money(totals.income, currency)} hint="Alle Einnahmen im gewählten Monat" icon={TrendingUp} gradient="linear-gradient(135deg,#166534,#22c55e)" className="fkb-stat-1" />
-              <StatCard title="Ausgaben" value={money(totals.expenses, currency)} subValue={`${((totals.expenses / (totals.income || 1)) * 100).toFixed(0)}% vom Einkommen`} hint="Fix + variabel + sparen" icon={TrendingDown} gradient="linear-gradient(135deg,#9f1239,#ef4444)" className="fkb-stat-2" />
-              <StatCard title="Restbudget" value={money(totals.remaining, currency)} subValue={`${percentages.remainingPct.toFixed(0)}% vom Einkommen`} hint="Was nach allen Buchungen übrig bleibt" icon={CreditCard} gradient="linear-gradient(135deg,#312e81,#6366f1)" className="fkb-stat-3" />
+              <StatCard title="Einkommen" value={money(totals.income, currency)} hint="Alle Einnahmen im gewählten Monat" icon={TrendingUp} gradient="linear-gradient(135deg,#166534,#22c55e)" className="fkb-stat-1" badge={<MoMBadge current={totals.income} previous={lastMonthTotals.income} />} />
+              <StatCard title="Ausgaben" value={money(totals.expenses, currency)} subValue={`${((totals.expenses / (totals.income || 1)) * 100).toFixed(0)}% vom Einkommen`} hint="Fix + variabel + sparen" icon={TrendingDown} gradient="linear-gradient(135deg,#9f1239,#ef4444)" className="fkb-stat-2" badge={<MoMBadge current={totals.expenses} previous={lastMonthTotals.expenses} />} />
+              <StatCard title="Restbudget" value={money(totals.remaining, currency)} subValue={`${percentages.remainingPct.toFixed(0)}% vom Einkommen`} hint="Was nach allen Buchungen übrig bleibt" icon={CreditCard} gradient="linear-gradient(135deg,#312e81,#6366f1)" className="fkb-stat-3" badge={<MoMBadge current={totals.remaining} previous={lastMonthTotals.remaining} />} />
               <StatCard title="Sparkonto" value={money(savingsAccount.balance, currency)} hint="Stand auf dem Sparkonto" icon={Activity} gradient="linear-gradient(135deg,#b45309,#f59e0b)" className="fkb-stat-4" />
             </div>
 
