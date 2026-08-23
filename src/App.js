@@ -839,6 +839,7 @@ function App() {
   const [budgets, setBudgets] = useState(seedData.budgets);
   const [recurring, setRecurring] = useState(seedData.recurring);
   const [goals, setGoals] = useState(seedData.goals);
+  const [debts, setDebts] = useState([]);
   const [mainAccount, setMainAccount] = useState(seedData.mainAccount);
   const [savingsAccount, setSavingsAccount] = useState(seedData.savingsAccount);
   const [currency, setCurrency] = useState(seedData.settings.currency);
@@ -917,6 +918,7 @@ const [openVersions, setOpenVersions] = useState({
     if (parsed.budgets) setBudgets(parsed.budgets);
     if (parsed.recurring) setRecurring(parsed.recurring);
     if (parsed.goals) setGoals(parsed.goals);
+    if (parsed.debts) setDebts(parsed.debts);
     if (parsed.mainAccount) setMainAccount(parsed.mainAccount);
     if (parsed.savingsAccount) setSavingsAccount(parsed.savingsAccount);
     if (parsed.settings?.currency) setCurrency(parsed.settings.currency);
@@ -961,12 +963,12 @@ const [openVersions, setOpenVersions] = useState({
     if (!user || !dataLoaded) return;
     if (skipNextWrite.current) { skipNextWrite.current = false; return; }
     const data = {
-      transactions, budgets, recurring, goals, mainAccount, savingsAccount,
+      transactions, budgets, recurring, goals, debts, mainAccount, savingsAccount,
       settings: { currency, weeklyMode, monthOffset, payday, darkMode, username },
     };
     localStorage.setItem(STORAGE_KEY, JSON.stringify(data));
     setDoc(doc(db, "users", user.uid), data).catch(console.error);
-  }, [user, dataLoaded, transactions, budgets, recurring, goals, mainAccount, savingsAccount, currency, weeklyMode, monthOffset, payday, darkMode, username]);
+  }, [user, dataLoaded, transactions, budgets, recurring, goals, debts, mainAccount, savingsAccount, currency, weeklyMode, monthOffset, payday, darkMode, username]);
 
   useEffect(() => {
     // Nur Einträge die wirklich dran sind (jährliche nur im richtigen Monat)
@@ -1266,6 +1268,34 @@ const [openVersions, setOpenVersions] = useState({
   function updateGoalAllocated(id, value) {
     const amount = Math.max(0, Number(value) || 0);
     setGoals((prev) => prev.map((g) => (g.id === id ? { ...g, allocated: amount } : g)));
+  }
+
+  const [newDebt, setNewDebt] = useState({ person: "", amount: "", reason: "", account: "main", direction: "lent" });
+
+  function addDebt() {
+    const amount = Number(newDebt.amount);
+    if (!newDebt.person || !amount || amount <= 0) return;
+    const debt = { id: Date.now(), ...newDebt, amount, date: new Date().toISOString().slice(0, 10) };
+    setDebts((prev) => [debt, ...prev]);
+    if (newDebt.account === "savings") {
+      setSavingsAccount((p) => ({ ...p, balance: p.balance - amount }));
+    } else {
+      setMainAccount((p) => ({ ...p, balance: p.balance - amount }));
+    }
+    setNewDebt({ person: "", amount: "", reason: "", account: "main", direction: "lent" });
+  }
+
+  function settleDebt(id) {
+    const debt = debts.find((d) => d.id === id);
+    if (!debt) return;
+    if (debt.direction === "lent") {
+      if (debt.account === "savings") {
+        setSavingsAccount((p) => ({ ...p, balance: p.balance + debt.amount }));
+      } else {
+        setMainAccount((p) => ({ ...p, balance: p.balance + debt.amount }));
+      }
+    }
+    setDebts((prev) => prev.filter((d) => d.id !== id));
   }
 
   function handleSavingsTransfer() {
@@ -2198,6 +2228,78 @@ function toggleVersion(version) {
                   <button style={{ ...s.buttonSecondary, width: "100%", marginTop: 14, whiteSpace: "normal", height: "auto", padding: "12px 16px", lineHeight: 1.4, textAlign: "center" }} onClick={settleBorrowedSavings}>Monatsanfang ausgleichen + Zins zurücklegen</button>
                 </div>
               </div>
+            </div>
+
+            <div style={{ ...s.card, padding: 18 }}>
+              <SectionTitle title="Schulden & Ausleihen" description="Kein Einfluss auf Analyse oder Budget — nur Kontostand" />
+              <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(160px,1fr))", gap: 12, marginBottom: 16 }}>
+                {(() => {
+                  const lent = debts.filter((d) => d.direction === "lent").reduce((s, d) => s + d.amount, 0);
+                  const owed = debts.filter((d) => d.direction === "owed").reduce((s, d) => s + d.amount, 0);
+                  return (<>
+                    <div style={{ ...s.softCard, background: darkMode ? "rgba(22,163,74,0.12)" : "#ecfdf5", borderColor: darkMode ? "rgba(22,163,74,0.25)" : "#bbf7d0" }}><div style={{ color: darkMode ? "#86efac" : "#15803d", fontSize: 13 }}>Ausgeliehen</div><div style={{ fontWeight: 900, fontSize: 22, marginTop: 6 }}>{money(lent, currency)}</div><div style={{ fontSize: 12, color: s.textMuted, marginTop: 2 }}>kommt zurück</div></div>
+                    <div style={{ ...s.softCard, background: darkMode ? "rgba(220,38,38,0.08)" : "#fff1f2", borderColor: darkMode ? "rgba(220,38,38,0.2)" : "#fecdd3" }}><div style={{ color: darkMode ? "#fca5a5" : "#be123c", fontSize: 13 }}>Ich schulde</div><div style={{ fontWeight: 900, fontSize: 22, marginTop: 6 }}>{money(owed, currency)}</div><div style={{ fontSize: 12, color: s.textMuted, marginTop: 2 }}>muss ich zahlen</div></div>
+                    <div style={s.softCard}><div style={{ color: s.textMuted, fontSize: 13 }}>Saldo</div><div style={{ fontWeight: 900, fontSize: 22, marginTop: 6, color: lent - owed >= 0 ? "#16a34a" : "#dc2626" }}>{money(lent - owed, currency)}</div><div style={{ fontSize: 12, color: s.textMuted, marginTop: 2 }}>netto</div></div>
+                  </>);
+                })()}
+              </div>
+              <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(160px,1fr))", gap: 10, marginBottom: 16 }}>
+                <div style={{ display: "flex", gap: 6, background: s.surfaceAlt, borderRadius: 10, padding: 4, border: `1px solid ${s.border}`, gridColumn: "span 2" }}>
+                  <button onClick={() => setNewDebt((p) => ({ ...p, direction: "lent" }))} style={{ ...s.tabButton, flex: 1, height: 34, borderRadius: 7, background: newDebt.direction === "lent" ? (darkMode ? "rgba(255,255,255,0.12)" : "white") : "transparent", fontWeight: newDebt.direction === "lent" ? 700 : 500, color: newDebt.direction === "lent" ? s.text : s.textMuted }}>Ich leihe aus</button>
+                  <button onClick={() => setNewDebt((p) => ({ ...p, direction: "owed" }))} style={{ ...s.tabButton, flex: 1, height: 34, borderRadius: 7, background: newDebt.direction === "owed" ? (darkMode ? "rgba(255,255,255,0.12)" : "white") : "transparent", fontWeight: newDebt.direction === "owed" ? 700 : 500, color: newDebt.direction === "owed" ? s.text : s.textMuted }}>Ich schulde</button>
+                </div>
+                <input style={s.input} placeholder="Person" value={newDebt.person} onChange={(e) => setNewDebt((p) => ({ ...p, person: e.target.value }))} />
+                <input style={s.input} type="number" placeholder="Betrag" value={newDebt.amount} onChange={(e) => setNewDebt((p) => ({ ...p, amount: e.target.value }))} />
+                <input style={s.input} placeholder="Grund (optional)" value={newDebt.reason} onChange={(e) => setNewDebt((p) => ({ ...p, reason: e.target.value }))} />
+                {newDebt.direction === "lent" && (
+                  <select style={s.input} value={newDebt.account} onChange={(e) => setNewDebt((p) => ({ ...p, account: e.target.value }))}>
+                    <option value="main">Hauptkonto</option>
+                    <option value="savings">Sparkonto</option>
+                  </select>
+                )}
+                <button style={s.button} onClick={addDebt}>Erfassen</button>
+              </div>
+              {debts.length === 0 && <EmptyState icon="🤝" text="Keine offenen Schulden" sub="Alles beglichen — oder noch nichts erfasst." />}
+              {["lent","owed"].map((dir) => {
+                const list = debts.filter((d) => d.direction === dir);
+                if (list.length === 0) return null;
+                const grouped = list.reduce((acc, d) => {
+                  if (!acc[d.person]) acc[d.person] = [];
+                  acc[d.person].push(d);
+                  return acc;
+                }, {});
+                return (
+                  <div key={dir} style={{ marginTop: 12 }}>
+                    <div style={{ fontWeight: 700, fontSize: 13, color: s.textMuted, textTransform: "uppercase", letterSpacing: "0.05em", marginBottom: 8 }}>{dir === "lent" ? "🤝 Ausgeliehen" : "💸 Ich schulde"}</div>
+                    <div style={{ display: "grid", gap: 10 }}>
+                      {Object.entries(grouped).map(([person, items]) => {
+                        const total = items.reduce((s, d) => s + d.amount, 0);
+                        return (
+                          <div key={person} style={{ ...s.softCard, padding: 0, overflow: "hidden" }}>
+                            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "12px 16px", borderBottom: `1px solid ${s.border}` }}>
+                              <div style={{ fontWeight: 800, fontSize: 16 }}>{person}</div>
+                              <div style={{ fontWeight: 900, fontSize: 18, color: dir === "lent" ? "#16a34a" : "#dc2626" }}>{dir === "lent" ? "+" : "−"}{money(total, currency)}</div>
+                            </div>
+                            {items.map((d) => (
+                              <div key={d.id} style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "10px 16px", borderBottom: `1px solid ${s.border}`, gap: 10, flexWrap: "wrap" }}>
+                                <div>
+                                  <div style={{ fontSize: 14, fontWeight: 600 }}>{d.reason || "Kein Grund angegeben"}</div>
+                                  <div style={{ fontSize: 12, color: s.textMuted, marginTop: 2 }}>{d.date}{dir === "lent" ? ` · ${d.account === "savings" ? "Sparkonto" : "Hauptkonto"}` : ""}</div>
+                                </div>
+                                <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+                                  <div style={{ fontWeight: 700, fontSize: 15, color: dir === "lent" ? "#16a34a" : "#dc2626" }}>{dir === "lent" ? "+" : "−"}{money(d.amount, currency)}</div>
+                                  <button style={{ ...s.button, padding: "6px 12px", fontSize: 12 }} onClick={() => settleDebt(d.id)}>Beglichen</button>
+                                  <button style={{ ...s.buttonSecondary, width: 32, padding: 0 }} onClick={() => setDebts((prev) => prev.filter((x) => x.id !== d.id))}><Trash2 size={13} /></button>
+                                </div>
+                              </div>
+                            ))}
+                          </div>
+                        );
+                      })}
+                    </div>
+                  </div>
+                );
+              })}
             </div>
 
           </div>
