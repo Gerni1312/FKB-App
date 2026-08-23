@@ -868,7 +868,6 @@ function App() {
   const [newRecurring, setNewRecurring] = useState({ title: "", amount: "", category: "", bucket: "fixed", type: "expense", dayOfMonth: "1", frequency: "monthly", monthOfYear: 1, note: "" });
   const [newGoal, setNewGoal] = useState({ name: "", target: "" });
   const [savingsTransfer, setSavingsTransfer] = useState({ type: "deposit", amount: "", note: "" });
-  const [borrowForm, setBorrowForm] = useState({ amount: "", interest: "", note: "" });
 
   const selectedMonthDate = useMemo(() => getShiftedMonthDate(monthOffset), [monthOffset]);
   const selectedMonthKey = useMemo(() => getMonthKey(selectedMonthDate), [selectedMonthDate]);
@@ -1316,33 +1315,6 @@ const [openVersions, setOpenVersions] = useState({
     setSavingsTransfer({ type: "deposit", amount: "", note: "" });
   }
 
-  function handleBorrowFromSavings() {
-    const amount = Number(borrowForm.amount);
-    const interest = Number(borrowForm.interest || 0);
-    if (!amount || amount <= 0) return;
-    const today = new Date().toISOString().slice(0, 10);
-
-    setMainAccount((prev) => ({ ...prev, balance: Number(prev.balance || 0) + amount }));
-    setSavingsAccount((prev) => ({
-      ...prev,
-      balance: Math.max(Number(prev.balance || 0) - amount, 0),
-      borrowedOut: Number(prev.borrowedOut || 0) + amount,
-      expectedInterest: Number(prev.expectedInterest || 0) + interest,
-    }));
-
-    setTransactions((prev) => [{ id: Date.now() + Math.random(), type: "income", category: "Vom Sparkonto geliehen", amount, note: borrowForm.note || "Vom Sparkonto ausgeliehen", date: today, bucket: "income" }, ...prev]);
-    setBorrowForm({ amount: "", interest: "", note: "" });
-  }
-
-  function settleBorrowedSavings() {
-    const expected = Number(savingsAccount.borrowedOut || 0) + Number(savingsAccount.expectedInterest || 0);
-    if (expected <= 0) return;
-    const today = new Date().toISOString().slice(0, 10);
-
-    setMainAccount((prev) => ({ ...prev, balance: Math.max(Number(prev.balance || 0) - expected, 0) }));
-    setTransactions((prev) => [{ id: Date.now() + Math.random(), type: "expense", category: "Sparkonto Ausgleich", amount: expected, note: "Ausgeliehenen Betrag mit Zins zurückgelegt", date: today, bucket: "saving" }, ...prev]);
-    setSavingsAccount((prev) => ({ ...prev, balance: Number(prev.balance || 0) + expected, borrowedOut: 0, expectedInterest: 0 }));
-  }
 
   function handleAppUpdate() {
     const waiting = window.__swWaiting;
