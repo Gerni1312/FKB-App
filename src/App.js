@@ -409,7 +409,7 @@ const chartColors = ["#22c55e", "#f59e0b", "#ef4444", "#0ea5e9", "#8b5cf6", "#14
         {
           title: "Sparen",
           items: [
-            "Sparen wird nicht mehr als negatives Budget angezeigt." "Fynn Tschäppät hohmadstrass 39c Thun 3600",
+            "Sparen wird nicht mehr als negatives Budget angezeigt.",
             "Neuer Sparplan-Bereich wurde hinzugefügt.",
           ],
         },
@@ -1929,7 +1929,7 @@ function toggleVersion(version) {
                       <div style={{ display: "flex", justifyContent: "space-between", gap: 12, flexWrap: "wrap", alignItems: "center" }}>
                         <div>
                           <div style={{ fontWeight: 800 }}>{r.title}</div>
-                          <div style={{ color: "#71717a", fontSize: 14, marginTop: 4 }}>{money(r.amount, currency)} · {r.category} · {r.frequency === "yearly" ? `Jährlich im ${monthNames[(r.monthOfYear || 1) - 1]}, Tag ${r.dayOfMonth}` : `Monatlich, Tag ${r.dayOfMonth}`}</div>
+                          <div style={{ color: "#71717a", fontSize: 14, marginTop: 4 }}>{money(r.amount, currency)} · {r.category} · {r.frequency === "yearly" ? `Jährlich im ${monthNames[(r.monthOfYear || 1) - 1]}, Tag ${r.dayOfMonth}` : `Monatlich, Tag ${r.dayOfMonth}`} · <span style={{ color: darkMode ? "#fca5a5" : "#be123c" }}>{money(r.frequency === "yearly" ? Number(r.amount) : Number(r.amount) * 12, currency)}/Jahr</span></div>
                         </div>
                         <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
                           <span style={s.badge}>{r.active ? "Aktiv" : "Pausiert"}</span>
