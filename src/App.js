@@ -836,6 +836,7 @@ function App() {
   const [selectedCalendarDay, setSelectedCalendarDay] = useState(null);
   const [categoryView, setCategoryView] = useState("expense");
   const [monthRange, setMonthRange] = useState(6);
+  const [calendarFilter, setCalendarFilter] = useState("all");
   const [restbudgetDismissed, setRestbudgetDismissed] = useState(false);
   const [swUpdateAvailable, setSwUpdateAvailable] = useState(false);
 
@@ -1088,7 +1089,25 @@ const [openVersions, setOpenVersions] = useState({
     };
   }, [totals]);
 
-  const calendarCells = useMemo(() => buildCalendar(selectedMonthDate, monthTransactions), [selectedMonthDate, monthTransactions]);
+  const calendarFilteredTransactions = useMemo(() => {
+    if (calendarFilter === "no-fixed") return monthTransactions.filter((t) => !t.auto && !(t.note && t.note.startsWith("[AUTO]")));
+    if (calendarFilter === "fixed-only") return monthTransactions.filter((t) => t.auto || (t.note && t.note.startsWith("[AUTO]")));
+    return monthTransactions;
+  }, [monthTransactions, calendarFilter]);
+
+  const calendarCells = useMemo(() => buildCalendar(selectedMonthDate, calendarFilteredTransactions), [selectedMonthDate, calendarFilteredTransactions]);
+
+  const weekdayData = useMemo(() => {
+    const days = ["Mo","Di","Mi","Do","Fr","Sa","So"];
+    const totalsPerDay = days.map(() => ({ sum: 0, count: 0 }));
+    calendarFilteredTransactions.filter((t) => t.type === "expense").forEach((t) => {
+      const d = new Date(t.date);
+      const idx = (d.getDay() + 6) % 7;
+      totalsPerDay[idx].sum += Number(t.amount);
+      totalsPerDay[idx].count += 1;
+    });
+    return days.map((name, i) => ({ name, total: totalsPerDay[i].sum, count: totalsPerDay[i].count }));
+  }, [calendarFilteredTransactions]);
 
   function addTransaction() {
     const amount = Number(newTransaction.amount);
@@ -2071,7 +2090,17 @@ function toggleVersion(version) {
         {tab === "calendar" && (
           <div style={{ display: "grid", gap: 16 }}>
             <div style={{ ...s.card, padding: 18, overflow: "hidden" }}>
-              <SectionTitle title="Kalenderansicht pro Monat" description="Sieh auf einen Blick, an welchen Tagen du Geld bekommen oder ausgegeben hast" />
+              <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", flexWrap: "wrap", gap: 12, marginBottom: 14 }}>
+                <div>
+                  <div style={{ fontWeight: 800, fontSize: 22 }}>Kalenderansicht</div>
+                  <div style={{ color: s.textMuted, fontSize: 14, marginTop: 4 }}>Sieh auf einen Blick, an welchen Tagen du Geld ausgegeben hast</div>
+                </div>
+                <div style={{ display: "flex", gap: 6, background: s.surfaceAlt, borderRadius: 12, padding: 4, border: `1px solid ${s.border}` }}>
+                  {[["all","Alle"],["no-fixed","Ohne Fixkosten"],["fixed-only","Nur Fixkosten"]].map(([val, label]) => (
+                    <button key={val} onClick={() => setCalendarFilter(val)} style={{ ...s.tabButton, height: 34, padding: "0 12px", fontSize: 13, borderRadius: 9, background: calendarFilter === val ? (darkMode ? "rgba(255,255,255,0.12)" : "white") : "transparent", color: calendarFilter === val ? s.text : s.textMuted, fontWeight: calendarFilter === val ? 700 : 500, boxShadow: calendarFilter === val ? "0 1px 4px rgba(0,0,0,0.1)" : "none" }}>{label}</button>
+                  ))}
+                </div>
+              </div>
               <div style={{ display: "grid", gridTemplateColumns: "repeat(7,1fr)", gap: 8, fontSize: 12, color: "#71717a", fontWeight: 800, marginBottom: 10 }}>
                 {["Mo", "Di", "Mi", "Do", "Fr", "Sa", "So"].map((d) => <div key={d} style={{ textAlign: "center" }}>{d}</div>)}
               </div>
@@ -2093,6 +2122,21 @@ function toggleVersion(version) {
                     </button>
                   );
                 })}
+              </div>
+            </div>
+
+            <div style={{ ...s.card, padding: 18 }}>
+              <SectionTitle title="Ausgaben nach Wochentag" description="An welchen Tagen gibst du am meisten aus?" />
+              <div style={{ width: "100%", height: 220 }}>
+                <ResponsiveContainer width="100%" height="100%">
+                  <BarChart data={weekdayData} margin={{ top: 5, right: 10, left: 0, bottom: 5 }}>
+                    <CartesianGrid strokeDasharray="3 3" stroke={darkMode ? "rgba(255,255,255,0.08)" : "rgba(0,0,0,0.06)"} />
+                    <XAxis dataKey="name" tick={{ fontSize: 13, fill: darkMode ? "#a1a1aa" : "#71717a" }} />
+                    <YAxis tick={{ fontSize: 12, fill: darkMode ? "#a1a1aa" : "#71717a" }} tickFormatter={(v) => `${currency}${v}`} width={55} />
+                    <Tooltip formatter={(value, _, props) => [`${money(value, currency)} (${props.payload.count} Buchung${props.payload.count !== 1 ? "en" : ""})`, "Ausgaben"]} labelStyle={{ color: darkMode ? "#f4f4f5" : "#18181b" }} contentStyle={{ background: darkMode ? "#27272a" : "white", border: `1px solid ${darkMode ? "#3f3f46" : "#e4e4e7"}`, borderRadius: 10 }} />
+                    <Bar dataKey="total" radius={[8, 8, 0, 0]} fill="#ef4444" />
+                  </BarChart>
+                </ResponsiveContainer>
               </div>
             </div>
 
