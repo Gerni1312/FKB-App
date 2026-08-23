@@ -1851,6 +1851,18 @@ function toggleVersion(version) {
                 <button style={s.button} onClick={addRecurring}>Hinzufügen</button>
               </div>
 
+              {recurring.length > 0 && (() => {
+                const monthlyTotal = recurring.filter((r) => r.active && r.type === "expense" && r.frequency === "monthly").reduce((s, r) => s + Number(r.amount), 0);
+                const yearlyFixed = recurring.filter((r) => r.active && r.type === "expense" && r.frequency === "yearly").reduce((s, r) => s + Number(r.amount), 0);
+                const yearlyTotal = monthlyTotal * 12 + yearlyFixed;
+                return (
+                  <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(140px,1fr))", gap: 12, marginTop: 16 }}>
+                    <div style={s.softCard}><div style={{ color: s.textMuted, fontSize: 13 }}>Pro Monat</div><div style={{ fontWeight: 900, fontSize: 22, marginTop: 6, color: "#dc2626" }}>−{money(monthlyTotal, currency)}</div><div style={{ fontSize: 12, color: s.textMuted, marginTop: 4 }}>{recurring.filter((r) => r.active && r.frequency === "monthly").length} Positionen</div></div>
+                    <div style={{ ...s.softCard, background: darkMode ? "rgba(220,38,38,0.08)" : "#fff1f2", borderColor: darkMode ? "rgba(220,38,38,0.2)" : "#fecdd3" }}><div style={{ color: darkMode ? "#fca5a5" : "#be123c", fontSize: 13 }}>Pro Jahr</div><div style={{ fontWeight: 900, fontSize: 22, marginTop: 6, color: "#dc2626" }}>−{money(yearlyTotal, currency)}</div><div style={{ fontSize: 12, color: s.textMuted, marginTop: 4 }}>{recurring.filter((r) => r.active).length} aktive Positionen</div></div>
+                  </div>
+                );
+              })()}
+
               <div style={{ display: "grid", gap: 12, marginTop: 16 }}>
                 {recurring.length === 0 && <EmptyState icon="🔁" text="Noch keine Fixausgaben" sub="Füge Handy, Abos oder Sparraten hinzu." />}
                 {recurring.map((r) => (
