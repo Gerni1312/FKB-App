@@ -23,6 +23,7 @@ import {
   AlertTriangle,
   Calendar,
   Activity,
+  PiggyBank,
 } from "lucide-react";
 import {
   PieChart,
@@ -1775,23 +1776,30 @@ function toggleVersion(version) {
               </div>
             )}
 
-            {monthOffset === 0 && daysUntilMonthEnd <= 1 && totalBudgetRemaining > 0 && !restbudgetDismissed && (
-              <div style={{ ...s.card, background: "linear-gradient(135deg,#ecfdf5,#d1fae5)", border: "2px solid #6ee7b7", padding: 20, marginBottom: 16 }}>
-                <div style={{ display: "flex", gap: 14, alignItems: "flex-start", flexWrap: "wrap" }}>
-                  <div style={{ fontSize: 32 }}>💰</div>
-                  <div style={{ flex: 1, minWidth: 0 }}>
-                    <div style={{ fontWeight: 900, fontSize: 18, color: "#065f46" }}>Budget-Restgeld verfügbar</div>
-                    <div style={{ fontSize: 14, color: "#047857", marginTop: 6 }}>
-                      Du hast diesen Monat <strong>{money(totalBudgetRemaining, currency)}</strong> Budget übrig. Willst du es aufs Sparkonto verschieben?
+            {monthOffset === 0 && daysUntilMonthEnd <= 3 && totalBudgetRemaining > 0 && !restbudgetDismissed && (
+              <div style={{ ...s.card, padding: "16px 20px", marginBottom: 16, borderLeft: `4px solid ${darkMode ? "#34d399" : "#059669"}`, borderRadius: 12 }}>
+                <div style={{ display: "flex", gap: 16, alignItems: "center", flexWrap: "wrap" }}>
+                  <div style={{ width: 44, height: 44, borderRadius: 12, background: darkMode ? "rgba(52,211,153,0.15)" : "#ecfdf5", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
+                    <PiggyBank size={22} color={darkMode ? "#34d399" : "#059669"} />
+                  </div>
+                  <div style={{ flex: 1, minWidth: 180 }}>
+                    <div style={{ display: "flex", alignItems: "center", gap: 10, flexWrap: "wrap" }}>
+                      <span style={{ fontWeight: 800, fontSize: 16 }}>Restbudget aufs Sparkonto?</span>
+                      <span style={{ fontSize: 12, fontWeight: 700, padding: "2px 8px", borderRadius: 6, background: darkMode ? "rgba(52,211,153,0.15)" : "#dcfce7", color: darkMode ? "#34d399" : "#15803d" }}>
+                        {daysUntilMonthEnd === 0 ? "Letzter Tag" : `Noch ${daysUntilMonthEnd} Tag${daysUntilMonthEnd === 1 ? "" : "e"}`}
+                      </span>
                     </div>
-                    <div style={{ display: "flex", gap: 8, marginTop: 16, flexWrap: "wrap" }}>
-                      <button style={{ ...s.button, background: "#059669", color: "#fff", fontWeight: 800, padding: "10px 20px", fontSize: 15, height: "auto" }} onClick={handleBookRestbudget}>
-                        Als Sparbetrag buchen
-                      </button>
-                      <button style={{ ...s.buttonSecondary, padding: "10px 16px", height: "auto" }} onClick={() => setRestbudgetDismissed(true)}>
-                        Jetzt nicht
-                      </button>
+                    <div style={{ fontSize: 13, color: s.textMuted, marginTop: 3 }}>
+                      <strong style={{ color: darkMode ? "#34d399" : "#059669" }}>{money(totalBudgetRemaining, currency)}</strong> Budget übrig — jetzt sparen statt liegen lassen.
                     </div>
+                  </div>
+                  <div style={{ display: "flex", gap: 8, flexShrink: 0, flexWrap: "wrap" }}>
+                    <button style={{ ...s.button, background: darkMode ? "#059669" : "#059669", color: "#fff", fontWeight: 700, padding: "8px 18px", height: "auto", fontSize: 14 }} onClick={handleBookRestbudget}>
+                      Sparen
+                    </button>
+                    <button style={{ ...s.buttonSecondary, padding: "8px 14px", height: "auto", fontSize: 14 }} onClick={() => setRestbudgetDismissed(true)}>
+                      Nicht jetzt
+                    </button>
                   </div>
                 </div>
               </div>
