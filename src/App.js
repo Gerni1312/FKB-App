@@ -1592,11 +1592,11 @@ function toggleVersion(version) {
             )}
 
             <div style={s.gridCards}>
-              <StatCard title="Verfügbar" value={money(totals.remaining, currency)} subValue={`${percentages.remainingPct.toFixed(0)}% vom Einkommen`} hint="Was nach allen Buchungen übrig bleibt" icon={Wallet} gradient="linear-gradient(135deg,#09090b,#3f3f46)" className="fkb-stat-0" />
+              <StatCard title="Verfügbar" value={money(mainAccount.balance, currency)} subValue={`Gesamt: ${money(accountSummary.totalCash, currency)}`} hint="Aktueller Stand auf dem Hauptkonto" icon={Wallet} gradient="linear-gradient(135deg,#09090b,#3f3f46)" className="fkb-stat-0" />
               <StatCard title="Einkommen" value={money(totals.income, currency)} hint="Alle Einnahmen im gewählten Monat" icon={TrendingUp} gradient="linear-gradient(135deg,#166534,#22c55e)" className="fkb-stat-1" />
               <StatCard title="Ausgaben" value={money(totals.expenses, currency)} subValue={`${((totals.expenses / (totals.income || 1)) * 100).toFixed(0)}% vom Einkommen`} hint="Fix + variabel + sparen" icon={TrendingDown} gradient="linear-gradient(135deg,#9f1239,#ef4444)" className="fkb-stat-2" />
-              <StatCard title="Hauptkonto" value={money(mainAccount.balance, currency)} hint="Geld für Alltag und spontane Ausgaben" icon={CreditCard} gradient="linear-gradient(135deg,#312e81,#6366f1)" className="fkb-stat-3" />
-              <StatCard title="Sparkonto" value={money(savingsAccount.balance, currency)} subValue={`Gesamt: ${money(accountSummary.totalCash, currency)}`} hint="Stand auf dem Sparkonto" icon={Activity} gradient="linear-gradient(135deg,#b45309,#f59e0b)" className="fkb-stat-4" />
+              <StatCard title="Restbudget" value={money(totals.remaining, currency)} subValue={`${percentages.remainingPct.toFixed(0)}% vom Einkommen`} hint="Was nach allen Buchungen übrig bleibt" icon={CreditCard} gradient="linear-gradient(135deg,#312e81,#6366f1)" className="fkb-stat-3" />
+              <StatCard title="Sparkonto" value={money(savingsAccount.balance, currency)} hint="Stand auf dem Sparkonto" icon={Activity} gradient="linear-gradient(135deg,#b45309,#f59e0b)" className="fkb-stat-4" />
             </div>
 
             <div style={{ ...s.grid2, marginTop: 16, gridTemplateColumns: mobileOnly ? "1fr" : "minmax(0,2fr) minmax(280px,1fr)" }}>
