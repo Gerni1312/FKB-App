@@ -507,8 +507,9 @@ function getRecurringDateForMonth(monthDate, dayOfMonth) {
 }
 
 function getBudgetSpentForRange(transactions, budget, monthOffset, payday) {
+  const key = (budget.category || budget.name).toLowerCase();
   const base = transactions.filter(
-    (t) => t.type === "expense" && t.category.toLowerCase() === budget.name.toLowerCase()
+    (t) => t.type === "expense" && t.category.toLowerCase() === key
   );
 
   if (budget.resetMode === "manual") {
@@ -842,7 +843,7 @@ function App() {
   const s = styles(darkMode, mobileOnly);
 
   const [newTransaction, setNewTransaction] = useState({ type: "expense", category: "Essen", amount: "", note: "", date: new Date().toISOString().slice(0, 10), bucket: "flex", targetAccount: "main" });
-  const [newBudget, setNewBudget] = useState({ name: "", limit: "", resetMode: "monthly" });
+  const [newBudget, setNewBudget] = useState({ name: "", category: "Freizeit", limit: "", resetMode: "monthly" });
   const [newRecurring, setNewRecurring] = useState({ title: "", amount: "", category: "", bucket: "fixed", type: "expense", dayOfMonth: "1", frequency: "monthly", monthOfYear: 1, note: "" });
   const [newGoal, setNewGoal] = useState({ name: "", target: "", current: "0" });
   const [goalContribution, setGoalContribution] = useState({});
@@ -1139,8 +1140,8 @@ const [openVersions, setOpenVersions] = useState({
   function addBudget() {
     const limit = Number(newBudget.limit);
     if (!newBudget.name || !limit || limit <= 0) return;
-    setBudgets((prev) => [...prev, { id: Date.now(), name: newBudget.name, limit, resetMode: newBudget.resetMode }]);
-    setNewBudget({ name: "", limit: "", resetMode: "monthly" });
+    setBudgets((prev) => [...prev, { id: Date.now(), name: newBudget.name, category: newBudget.category, limit, resetMode: newBudget.resetMode }]);
+    setNewBudget({ name: "", category: "Freizeit", limit: "", resetMode: "monthly" });
   }
 
   function deleteBudget(id) {
@@ -1755,7 +1756,8 @@ function toggleVersion(version) {
             <div style={{ ...s.card, padding: 18 }}>
               <SectionTitle title="Budget hinzufügen" description="Lege Limits pro Kategorie fest" />
               <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(180px,1fr))", gap: 12 }}>
-                <input style={s.input} placeholder="z. B. Freizeit" value={newBudget.name} onChange={(e) => setNewBudget((p) => ({ ...p, name: e.target.value }))} />
+                <input style={s.input} placeholder="Name (z. B. Fussball)" value={newBudget.name} onChange={(e) => setNewBudget((p) => ({ ...p, name: e.target.value }))} />
+                <select style={s.input} value={newBudget.category} onChange={(e) => setNewBudget((p) => ({ ...p, category: e.target.value }))}>{categories.map((c) => <option key={c} value={c}>{c}</option>)}</select>
                 <input style={s.input} type="number" placeholder="Limit" value={newBudget.limit} onChange={(e) => setNewBudget((p) => ({ ...p, limit: e.target.value }))} />
                 <select style={s.input} value={newBudget.resetMode} onChange={(e) => setNewBudget((p) => ({ ...p, resetMode: e.target.value }))}>
                   <option value="monthly">Monatlich</option>
@@ -1903,7 +1905,7 @@ function toggleVersion(version) {
                 <div key={budget.id} style={{ ...s.card, padding: 18 }}>
                   <div style={{ display: "flex", justifyContent: "space-between", gap: 10, alignItems: "start" }}>
                     <div>
-                      <div style={{ fontWeight: 800, fontSize: 20 }}>{budget.name}</div>
+                      <div style={{ display: "flex", alignItems: "center", gap: 8 }}><div style={{ fontWeight: 800, fontSize: 20 }}>{budget.name}</div>{(budget.category || budget.name) && <span style={{ fontSize: 11, background: darkMode ? "rgba(99,102,241,0.15)" : "#ede9fe", color: darkMode ? "#a5b4fc" : "#6d28d9", borderRadius: 6, padding: "2px 7px", fontWeight: 600 }}>{budget.category || budget.name}</span>}</div>
                       <div style={{ color: "#71717a", marginTop: 4, fontSize: 14 }}>Noch verfügbar: {money(budget.remaining, currency)} {budget.resetMode === "manual" ? "· manuell" : "· monatlich"}</div>
                     </div>
                     <div style={{ display: "flex", gap: 8 }}>
