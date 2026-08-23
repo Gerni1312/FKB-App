@@ -1079,6 +1079,23 @@ const [openVersions, setOpenVersions] = useState({
   }, [savingsAccount]);
 
   const totalAllocated = useMemo(() => goals.reduce((s, g) => s + Number(g.allocated || 0), 0), [goals]);
+
+  const wealthHistory = useMemo(() => {
+    const shortNames = ["Jan","Feb","Mär","Apr","Mai","Jun","Jul","Aug","Sep","Okt","Nov","Dez"];
+    const totalNow = Number(mainAccount.balance || 0) + Number(savingsAccount.balance || 0);
+    const affectingTxns = transactions.filter((t) => t.affectsAccount);
+    const totalNet = affectingTxns.reduce((s, t) => s + (t.type === "income" ? Number(t.amount) : -Number(t.amount)), 0);
+    const baseline = totalNow - totalNet;
+    return Array.from({ length: 6 }, (_, i) => {
+      const offset = i - 5;
+      const { start, end } = getMonthBounds(offset, payday);
+      const label = shortNames[start.getMonth()];
+      const netUpToMonth = affectingTxns
+        .filter((t) => new Date(t.date) <= end)
+        .reduce((s, t) => s + (t.type === "income" ? Number(t.amount) : -Number(t.amount)), 0);
+      return { label, total: Math.max(baseline + netUpToMonth, 0) };
+    });
+  }, [transactions, mainAccount.balance, savingsAccount.balance, payday]);
   const freeOnSavings = Math.max(Number(savingsAccount.balance || 0) - totalAllocated, 0);
 
   const percentages = useMemo(() => {
@@ -2026,6 +2043,30 @@ function toggleVersion(version) {
 
                   <button style={{ ...s.buttonSecondary, width: "100%", marginTop: 14, whiteSpace: "normal", height: "auto", padding: "12px 16px", lineHeight: 1.4, textAlign: "center" }} onClick={settleBorrowedSavings}>Monatsanfang ausgleichen + Zins zurücklegen</button>
                 </div>
+              </div>
+            </div>
+
+            <div style={{ ...s.card, padding: 18 }}>
+              <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", flexWrap: "wrap", gap: 12, marginBottom: 14 }}>
+                <div>
+                  <div style={{ fontWeight: 800, fontSize: 22 }}>Gesamtvermögen</div>
+                  <div style={{ color: s.textMuted, fontSize: 14, marginTop: 4 }}>Haupt- + Sparkonto kombiniert über 6 Monate</div>
+                </div>
+                <div style={{ ...s.softCard, background: darkMode ? "rgba(99,102,241,0.12)" : "#ede9fe", borderColor: darkMode ? "rgba(99,102,241,0.25)" : "#c4b5fd", padding: "10px 18px" }}>
+                  <div style={{ fontSize: 12, color: darkMode ? "#a5b4fc" : "#6d28d9" }}>Heute</div>
+                  <div style={{ fontWeight: 900, fontSize: 20 }}>{money(accountSummary.totalCash, currency)}</div>
+                </div>
+              </div>
+              <div style={{ width: "100%", height: 260 }}>
+                <ResponsiveContainer width="100%" height="100%">
+                  <LineChart data={wealthHistory} margin={{ top: 5, right: 10, left: 0, bottom: 5 }}>
+                    <CartesianGrid strokeDasharray="3 3" stroke={darkMode ? "rgba(255,255,255,0.08)" : "rgba(0,0,0,0.06)"} />
+                    <XAxis dataKey="label" tick={{ fontSize: 12, fill: darkMode ? "#a1a1aa" : "#71717a" }} />
+                    <YAxis tick={{ fontSize: 12, fill: darkMode ? "#a1a1aa" : "#71717a" }} tickFormatter={(v) => `${currency}${v}`} width={55} />
+                    <Tooltip formatter={(value) => [money(value, currency), "Gesamtvermögen"]} labelStyle={{ color: darkMode ? "#f4f4f5" : "#18181b" }} contentStyle={{ background: darkMode ? "#27272a" : "white", border: `1px solid ${darkMode ? "#3f3f46" : "#e4e4e7"}`, borderRadius: 10 }} />
+                    <Line type="monotone" dataKey="total" stroke="#6366f1" strokeWidth={3} dot={{ r: 5, fill: "#6366f1" }} activeDot={{ r: 7 }} />
+                  </LineChart>
+                </ResponsiveContainer>
               </div>
             </div>
 
