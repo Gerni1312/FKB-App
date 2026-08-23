@@ -31,10 +31,13 @@ import {
   ResponsiveContainer,
   BarChart,
   Bar,
+  LineChart,
+  Line,
   XAxis,
   YAxis,
   Tooltip,
   CartesianGrid,
+  Legend,
 } from "recharts";
 
 
@@ -832,6 +835,7 @@ function App() {
   const [filterBucket, setFilterBucket] = useState("all");
   const [selectedCalendarDay, setSelectedCalendarDay] = useState(null);
   const [categoryView, setCategoryView] = useState("expense");
+  const [monthRange, setMonthRange] = useState(6);
   const [restbudgetDismissed, setRestbudgetDismissed] = useState(false);
   const [swUpdateAvailable, setSwUpdateAvailable] = useState(false);
 
@@ -1008,6 +1012,20 @@ const [openVersions, setOpenVersions] = useState({
     });
     return Object.entries(grouped).map(([name, value]) => ({ name, value }));
   }, [monthTransactions]);
+
+  const multiMonthData = useMemo(() => {
+    const shortNames = ["Jan","Feb","Mär","Apr","Mai","Jun","Jul","Aug","Sep","Okt","Nov","Dez"];
+    return Array.from({ length: monthRange }, (_, i) => {
+      const offset = i - (monthRange - 1);
+      const { start, end } = getMonthBounds(offset, payday);
+      const label = shortNames[start.getMonth()];
+      const txns = transactions.filter((t) => { const d = new Date(t.date); return d >= start && d <= end; });
+      const income = txns.filter((t) => t.type === "income").reduce((s, t) => s + Number(t.amount), 0);
+      const expenses = txns.filter((t) => t.type === "expense").reduce((s, t) => s + Number(t.amount), 0);
+      const savings = txns.filter((t) => t.bucket === "saving").reduce((s, t) => s + Number(t.amount), 0);
+      return { label, income, expenses, savings };
+    });
+  }, [transactions, payday, monthRange]);
 
   const budgetsWithSpent = useMemo(() => budgets.map((b) => {
     const spent = getBudgetSpentForRange(transactions, b, monthOffset, payday);
@@ -2165,6 +2183,34 @@ function toggleVersion(version) {
                     </BarChart>
                   </ResponsiveContainer>
                 </div>
+              </div>
+            </div>
+
+            <div style={{ ...s.card, padding: 18 }}>
+              <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", flexWrap: "wrap", gap: 12, marginBottom: 14 }}>
+                <div>
+                  <div style={{ fontWeight: 800, fontSize: 22 }}>{monthRange}-Monats-Verlauf</div>
+                  <div style={{ color: s.textMuted, fontSize: 14, marginTop: 4 }}>Einnahmen, Ausgaben und Sparquote im Vergleich</div>
+                </div>
+                <div style={{ display: "flex", gap: 6, background: s.surfaceAlt, borderRadius: 12, padding: 4, border: `1px solid ${s.border}` }}>
+                  {[3, 6, 9, 12].map((m) => (
+                    <button key={m} onClick={() => setMonthRange(m)} style={{ ...s.tabButton, height: 34, padding: "0 12px", fontSize: 13, borderRadius: 9, background: monthRange === m ? (darkMode ? "rgba(255,255,255,0.12)" : "white") : "transparent", color: monthRange === m ? s.text : s.textMuted, fontWeight: monthRange === m ? 700 : 500, boxShadow: monthRange === m ? "0 1px 4px rgba(0,0,0,0.1)" : "none" }}>{m}M</button>
+                  ))}
+                </div>
+              </div>
+              <div style={{ width: "100%", height: 300 }}>
+                <ResponsiveContainer width="100%" height="100%">
+                  <LineChart data={multiMonthData} margin={{ top: 5, right: 10, left: 0, bottom: 5 }}>
+                    <CartesianGrid strokeDasharray="3 3" stroke={darkMode ? "rgba(255,255,255,0.08)" : "rgba(0,0,0,0.06)"} />
+                    <XAxis dataKey="label" tick={{ fontSize: 12, fill: darkMode ? "#a1a1aa" : "#71717a" }} />
+                    <YAxis tick={{ fontSize: 12, fill: darkMode ? "#a1a1aa" : "#71717a" }} tickFormatter={(v) => `${currency}${v}`} width={55} />
+                    <Tooltip formatter={(value, name) => [money(value, currency), { income: "Einnahmen", expenses: "Ausgaben", savings: "Sparen" }[name] || name]} labelStyle={{ color: darkMode ? "#f4f4f5" : "#18181b" }} contentStyle={{ background: darkMode ? "#27272a" : "white", border: `1px solid ${darkMode ? "#3f3f46" : "#e4e4e7"}`, borderRadius: 10 }} />
+                    <Legend formatter={(value) => ({ income: "Einnahmen", expenses: "Ausgaben", savings: "Sparen" }[value] || value)} />
+                    <Line type="monotone" dataKey="income" stroke="#22c55e" strokeWidth={2.5} dot={{ r: 4 }} activeDot={{ r: 6 }} />
+                    <Line type="monotone" dataKey="expenses" stroke="#ef4444" strokeWidth={2.5} dot={{ r: 4 }} activeDot={{ r: 6 }} />
+                    <Line type="monotone" dataKey="savings" stroke="#0ea5e9" strokeWidth={2.5} dot={{ r: 4 }} activeDot={{ r: 6 }} />
+                  </LineChart>
+                </ResponsiveContainer>
               </div>
             </div>
 
