@@ -1314,6 +1314,133 @@ const [openVersions, setOpenVersions] = useState({
     setRestbudgetDismissed(true);
   }
 
+  function generateReport() {
+    const now = new Date();
+    const dateStr = now.toLocaleDateString("de-CH", { day: "2-digit", month: "long", year: "numeric" });
+    const totalWealth = Number(mainAccount.balance || 0) + Number(savingsAccount.balance || 0);
+    const monthlyFixed = recurring.filter((r) => r.active && r.type === "expense" && r.frequency === "monthly").reduce((s, r) => s + Number(r.amount), 0);
+    const yearlyFixed = recurring.filter((r) => r.active && r.type === "expense" && r.frequency === "yearly").reduce((s, r) => s + Number(r.amount), 0);
+    const yearlyTotal = monthlyFixed * 12 + yearlyFixed;
+    const savingsPct = totals.income > 0 ? ((totals.saving / totals.income) * 100).toFixed(1) : "0.0";
+    const expPct = totals.income > 0 ? ((totals.expenses / totals.income) * 100).toFixed(1) : "0.0";
+
+    const fmt = (v) => `${currency} ${Number(v).toLocaleString("de-CH", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
+
+    const catRows = spendingByCategory.map((c, i) => `
+      <tr>
+        <td>${c.name}</td>
+        <td style="text-align:right;font-weight:700;color:#dc2626">${fmt(c.value)}</td>
+        <td style="text-align:right;color:#6b7280">${totals.expenses > 0 ? ((c.value / totals.expenses) * 100).toFixed(1) : 0}%</td>
+      </tr>`).join("");
+
+    const budgetRows = budgetsWithSpent.map((b) => `
+      <tr>
+        <td>${b.name}</td>
+        <td style="text-align:right">${fmt(b.spent)}</td>
+        <td style="text-align:right">${fmt(b.limit)}</td>
+        <td style="text-align:right;font-weight:700;color:${b.remaining < 0 ? "#dc2626" : "#16a34a"}">${fmt(b.remaining)}</td>
+        <td style="text-align:right">${b.progress.toFixed(0)}%</td>
+      </tr>`).join("");
+
+    const recurringRows = recurring.filter((r) => r.active).map((r) => `
+      <tr>
+        <td>${r.title}</td>
+        <td>${r.category}</td>
+        <td style="text-align:right;color:#dc2626">−${fmt(r.amount)}</td>
+        <td style="text-align:right;color:#dc2626">−${fmt(r.frequency === "yearly" ? Number(r.amount) : Number(r.amount) * 12)}</td>
+      </tr>`).join("");
+
+    const goalRows = goals.map((g) => {
+      const pct = g.target > 0 ? Math.min(((g.allocated || 0) / g.target) * 100, 100).toFixed(0) : 0;
+      return `<tr>
+        <td>${g.name}</td>
+        <td style="text-align:right">${fmt(g.allocated || 0)}</td>
+        <td style="text-align:right">${fmt(g.target)}</td>
+        <td style="text-align:right;font-weight:700">${pct}%</td>
+      </tr>`;
+    }).join("");
+
+    const recentTxns = [...monthTransactions].slice(0, 15).map((t) => `
+      <tr>
+        <td>${t.date}</td>
+        <td>${t.category}</td>
+        <td>${(t.note || "").replace(/^\[AUTO\]\s*/, "")}${t.auto ? " 🔁" : ""}</td>
+        <td style="text-align:right;font-weight:700;color:${t.type === "income" ? "#16a34a" : "#dc2626"}">${t.type === "income" ? "+" : "−"}${fmt(t.amount)}</td>
+      </tr>`).join("");
+
+    const html = `<!DOCTYPE html><html lang="de"><head><meta charset="UTF-8">
+    <title>FKB Finanzbericht – ${dateStr}</title>
+    <style>
+      * { margin: 0; padding: 0; box-sizing: border-box; }
+      body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif; color: #18181b; background: white; padding: 40px; max-width: 900px; margin: auto; font-size: 14px; }
+      h1 { font-size: 28px; font-weight: 900; margin-bottom: 4px; }
+      h2 { font-size: 16px; font-weight: 800; margin: 28px 0 12px; padding-bottom: 6px; border-bottom: 2px solid #18181b; text-transform: uppercase; letter-spacing: 0.05em; }
+      .meta { color: #71717a; font-size: 13px; margin-bottom: 32px; }
+      .kpi-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 16px; margin-bottom: 8px; }
+      .kpi { background: #f4f4f5; border-radius: 12px; padding: 16px 20px; }
+      .kpi-label { font-size: 12px; color: #71717a; text-transform: uppercase; letter-spacing: 0.05em; }
+      .kpi-value { font-size: 24px; font-weight: 900; margin-top: 4px; }
+      .kpi-sub { font-size: 12px; color: #71717a; margin-top: 2px; }
+      .kpi.green .kpi-value { color: #16a34a; }
+      .kpi.red .kpi-value { color: #dc2626; }
+      .kpi.purple .kpi-value { color: #6d28d9; }
+      table { width: 100%; border-collapse: collapse; margin-top: 4px; }
+      th { text-align: left; font-size: 11px; text-transform: uppercase; letter-spacing: 0.05em; color: #71717a; padding: 6px 10px; border-bottom: 1px solid #e4e4e7; }
+      td { padding: 9px 10px; border-bottom: 1px solid #f4f4f5; font-size: 13px; }
+      tr:last-child td { border-bottom: none; }
+      .highlight { background: #fafafa; border-radius: 10px; padding: 16px 20px; margin-bottom: 8px; }
+      .insight { background: #fffbeb; border-left: 3px solid #f59e0b; border-radius: 0 8px 8px 0; padding: 12px 16px; margin-top: 12px; font-size: 13px; color: #92400e; line-height: 1.5; }
+      .footer { margin-top: 40px; padding-top: 16px; border-top: 1px solid #e4e4e7; font-size: 12px; color: #a1a1aa; text-align: center; }
+      @media print { body { padding: 20px; } }
+    </style></head><body>
+    <h1>Finanzbericht</h1>
+    <div class="meta">${dateStr} · erstellt mit FKB Finance App · ${username || "Mein Konto"}</div>
+
+    <h2>Vermögensübersicht</h2>
+    <div class="kpi-grid">
+      <div class="kpi purple"><div class="kpi-label">Gesamtvermögen</div><div class="kpi-value">${fmt(totalWealth)}</div><div class="kpi-sub">Haupt- + Sparkonto</div></div>
+      <div class="kpi"><div class="kpi-label">Hauptkonto</div><div class="kpi-value">${fmt(mainAccount.balance)}</div></div>
+      <div class="kpi"><div class="kpi-label">Sparkonto</div><div class="kpi-value">${fmt(savingsAccount.balance)}</div></div>
+    </div>
+
+    <h2>Diesen Monat</h2>
+    <div class="kpi-grid">
+      <div class="kpi green"><div class="kpi-label">Einnahmen</div><div class="kpi-value">${fmt(totals.income)}</div></div>
+      <div class="kpi red"><div class="kpi-label">Ausgaben</div><div class="kpi-value">${fmt(totals.expenses)}</div><div class="kpi-sub">${expPct}% vom Einkommen</div></div>
+      <div class="kpi"><div class="kpi-label">Restbudget</div><div class="kpi-value" style="color:${totals.remaining >= 0 ? "#16a34a" : "#dc2626"}">${fmt(totals.remaining)}</div></div>
+    </div>
+    <div class="kpi-grid" style="margin-top:16px">
+      <div class="kpi"><div class="kpi-label">Fixkosten</div><div class="kpi-value">${fmt(totals.fixed)}</div><div class="kpi-sub">${percentages.fixedPct.toFixed(0)}% vom Einkommen</div></div>
+      <div class="kpi"><div class="kpi-label">Variabel</div><div class="kpi-value">${fmt(totals.flex)}</div><div class="kpi-sub">${percentages.flexPct.toFixed(0)}% vom Einkommen</div></div>
+      <div class="kpi green"><div class="kpi-label">Gespart</div><div class="kpi-value">${fmt(totals.saving)}</div><div class="kpi-sub">${savingsPct}% Sparquote</div></div>
+    </div>
+    ${totals.income > 0 ? `<div class="insight">💡 Du hast diesen Monat ${savingsPct}% deines Einkommens gespart. ${Number(savingsPct) >= 20 ? "Sehr gut — das liegt über der empfohlenen 20%-Sparquote." : Number(savingsPct) >= 10 ? "Solide. Mit etwas mehr Disziplin schaffst du die 20%-Marke." : "Versuche mindestens 10–20% zur Seite zu legen."}</div>` : ""}
+
+    ${catRows ? `<h2>Ausgaben nach Kategorie</h2>
+    <table><thead><tr><th>Kategorie</th><th style="text-align:right">Betrag</th><th style="text-align:right">Anteil</th></tr></thead><tbody>${catRows}</tbody></table>` : ""}
+
+    ${budgetRows ? `<h2>Budget-Status</h2>
+    <table><thead><tr><th>Budget</th><th style="text-align:right">Ausgegeben</th><th style="text-align:right">Limit</th><th style="text-align:right">Rest</th><th style="text-align:right">%</th></tr></thead><tbody>${budgetRows}</tbody></table>` : ""}
+
+    ${recurringRows ? `<h2>Fixausgaben</h2>
+    <table><thead><tr><th>Bezeichnung</th><th>Kategorie</th><th style="text-align:right">Pro Monat</th><th style="text-align:right">Pro Jahr</th></tr></thead><tbody>${recurringRows}</tbody>
+    <tfoot><tr style="font-weight:800;background:#f4f4f5"><td colspan="2">Total</td><td style="text-align:right;color:#dc2626">−${fmt(monthlyFixed)}</td><td style="text-align:right;color:#dc2626">−${fmt(yearlyTotal)}</td></tr></tfoot></table>` : ""}
+
+    ${goalRows ? `<h2>Sparziele</h2>
+    <table><thead><tr><th>Ziel</th><th style="text-align:right">Zugewiesen</th><th style="text-align:right">Zielbetrag</th><th style="text-align:right">Fortschritt</th></tr></thead><tbody>${goalRows}</tbody></table>` : ""}
+
+    ${recentTxns ? `<h2>Buchungen diesen Monat</h2>
+    <table><thead><tr><th>Datum</th><th>Kategorie</th><th>Notiz</th><th style="text-align:right">Betrag</th></tr></thead><tbody>${recentTxns}</tbody></table>` : ""}
+
+    <div class="footer">FKB Finance App · ${dateStr}</div>
+    <script>window.onload = () => window.print();</script>
+    </body></html>`;
+
+    const w = window.open("", "_blank");
+    w.document.write(html);
+    w.document.close();
+  }
+
   function exportData() {
     downloadJson(`sigma-finance-${selectedMonthKey}.json`, { exportedAt: new Date().toISOString(), version: 2, transactions, budgets, recurring, goals, mainAccount, savingsAccount, settings: { currency, weeklyMode, monthOffset, payday, darkMode } });
   }
@@ -2367,6 +2494,12 @@ function toggleVersion(version) {
                 </button>
               </div>
             </div>
+          </div>
+
+          <div style={s.softCard}>
+            <div style={{ fontWeight: 800, color: s.text }}>Monatsbericht</div>
+            <div style={{ fontSize: 14, color: s.textMuted, marginTop: 4, marginBottom: 14 }}>Erstellt einen vollständigen PDF-Bericht mit Vermögen, Kategorien, Budgets, Fixkosten und Sparzielen.</div>
+            <button style={{ ...s.button, width: "100%", justifyContent: "center" }} onClick={generateReport}><Download size={16} /> PDF-Bericht erstellen</button>
           </div>
 
           <div style={s.softCard}>
