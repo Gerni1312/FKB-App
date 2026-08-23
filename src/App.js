@@ -1734,9 +1734,9 @@ function toggleVersion(version) {
                         <div style={{ display: "flex", gap: 8, alignItems: "center", flexWrap: "wrap" }}>
                           <div style={{ fontWeight: 800, fontSize: 18 }}>{t.category}</div>
                           <span style={s.badge}>{{ income: "Einnahme", fixed: "Fixkosten", flex: "Variabel", saving: "Sparen" }[t.bucket] || t.bucket}</span>
-                          {t.auto && <span style={{ fontSize: 11, background: darkMode ? "rgba(14,165,233,0.15)" : "#e0f2fe", color: darkMode ? "#7dd3fc" : "#0369a1", borderRadius: 6, padding: "2px 7px", fontWeight: 600 }}>🔁 Wiederkehrend</span>}
+                          {(t.auto || (t.note && t.note.startsWith("[AUTO]"))) && <span style={{ fontSize: 11, background: darkMode ? "rgba(14,165,233,0.15)" : "#e0f2fe", color: darkMode ? "#7dd3fc" : "#0369a1", borderRadius: 6, padding: "2px 7px", fontWeight: 600 }}>🔁 Wiederkehrend</span>}
                         </div>
-                        <div style={{ color: "#71717a", marginTop: 6, fontSize: 14 }}>{t.note || "Keine Notiz"}</div>
+                        <div style={{ color: "#71717a", marginTop: 6, fontSize: 14 }}>{(t.note || "Keine Notiz").replace(/^\[AUTO\]\s*/, "")}</div>
                         <div style={{ color: "#71717a", marginTop: 8, fontSize: 12, display: "flex", gap: 12, flexWrap: "wrap" }}>
                           <span style={{ display: "inline-flex", alignItems: "center", gap: 5 }}><CalendarDays size={12} /> {t.date}</span>
                           <span>{t.type === "income" ? "Einnahme" : "Ausgabe"}</span>
