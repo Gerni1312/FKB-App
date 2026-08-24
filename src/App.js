@@ -1651,6 +1651,8 @@ function toggleVersion(version) {
   return (
     <div style={s.app}>
       <style>{`
+        *, *::before, *::after { box-sizing: border-box; }
+        html, body { overflow-x: hidden; max-width: 100vw; }
         @keyframes slideInLeft { from { opacity: 0; transform: translateX(-40px); } to { opacity: 1; transform: translateX(0); } }
         @keyframes slideInRight { from { opacity: 0; transform: translateX(40px); } to { opacity: 1; transform: translateX(0); } }
         @keyframes slideInUp { from { opacity: 0; transform: translateY(30px); } to { opacity: 1; transform: translateY(0); } }
@@ -1889,7 +1891,7 @@ function toggleVersion(version) {
           <div style={{ display: "grid", gap: 16 }}>
             <div style={{ ...s.card, padding: 18 }}>
               <SectionTitle title="Zahlung erfassen" description="Einnahme oder Ausgabe hinzufügen" />
-              <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10 }}>
+              <div style={{ display: "grid", gridTemplateColumns: mobileOnly ? "1fr" : "1fr 1fr", gap: 10 }}>
                 <select style={s.input} value={newTransaction.type} onChange={(e) => { const isIncome = e.target.value === "income"; setNewTransaction((p) => ({ ...p, type: e.target.value, bucket: isIncome ? "income" : "flex", targetAccount: "main", category: isIncome ? "Lohn" : "Essen" })); }}>
                   <option value="income">Einnahme</option>
                   <option value="expense">Ausgabe</option>
@@ -1906,18 +1908,14 @@ function toggleVersion(version) {
                     <option value="saving">Sparen</option>
                   </select>
                 )}
-                <div style={{ gridColumn: "span 2" }}>
-                  <select style={s.input} value={newTransaction.category} onChange={(e) => setNewTransaction((p) => ({ ...p, category: e.target.value }))}>
-                    {(newTransaction.type === "income" ? incomeCategories : categories).map((cat) => (
-                      <option key={cat} value={cat}>{cat}</option>
-                    ))}
-                  </select>
-                </div>
+                <select style={{ ...s.input, gridColumn: mobileOnly ? "1" : "span 2" }} value={newTransaction.category} onChange={(e) => setNewTransaction((p) => ({ ...p, category: e.target.value }))}>
+                  {(newTransaction.type === "income" ? incomeCategories : categories).map((cat) => (
+                    <option key={cat} value={cat}>{cat}</option>
+                  ))}
+                </select>
                 <input style={s.input} type="number" placeholder="Betrag" value={newTransaction.amount} onChange={(e) => setNewTransaction((p) => ({ ...p, amount: e.target.value }))} />
                 <input style={s.input} type="date" value={newTransaction.date} onChange={(e) => setNewTransaction((p) => ({ ...p, date: e.target.value }))} />
-                <div style={{ gridColumn: "span 2" }}>
-                  <input style={s.input} placeholder="Notiz (optional)" value={newTransaction.note} onChange={(e) => setNewTransaction((p) => ({ ...p, note: e.target.value }))} />
-                </div>
+                <input style={{ ...s.input, gridColumn: mobileOnly ? "1" : "span 2" }} placeholder="Notiz (optional)" value={newTransaction.note} onChange={(e) => setNewTransaction((p) => ({ ...p, note: e.target.value }))} />
               </div>
               <div style={{ marginTop: 12 }}>
                 <button style={{ ...s.button, width: "100%", justifyContent: "center" }} onClick={addTransaction}>Speichern</button>
