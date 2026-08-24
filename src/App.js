@@ -2765,7 +2765,7 @@ function toggleVersion(version) {
 
       {mobileOnly && (
         <div style={{ ...s.bottomNav, padding: "8px 4px 12px" }} className="fkb-bottom-nav">
-          <div style={{ display: "grid", gridTemplateColumns: "repeat(7,1fr)" }}>
+          <div style={{ display: "grid", gridTemplateColumns: "repeat(8,1fr)" }}>
             {[
               ["dashboard",    Home,       "Home"],
               ["transactions", CreditCard, "Buchungen"],
@@ -2773,6 +2773,7 @@ function toggleVersion(version) {
               ["budgets",      Target,     "Budgets"],
               ["sparen",       TrendingUp, "Sparen"],
               ["calendar",     Calendar,   "Kalender"],
+              ["analysis",     BarChart3,  "Analyse"],
               ["settings",     Settings,   "Settings"],
             ].map(([id, Icon, label]) => {
               const active = tab === id;
@@ -2780,12 +2781,12 @@ function toggleVersion(version) {
                 <button
                   key={id}
                   onClick={() => setTab(id)}
-                  style={{ background: "transparent", border: "none", cursor: "pointer", display: "flex", flexDirection: "column", alignItems: "center", gap: 3, padding: "6px 2px", borderRadius: 10, color: active ? "#6366f1" : (darkMode ? "#71717a" : "#9ca3af") }}
+                  style={{ background: "transparent", border: "none", cursor: "pointer", display: "flex", flexDirection: "column", alignItems: "center", gap: 2, padding: "6px 1px", borderRadius: 10, color: active ? "#6366f1" : (darkMode ? "#71717a" : "#9ca3af") }}
                 >
-                  <div style={{ width: 36, height: 30, borderRadius: 8, background: active ? (darkMode ? "rgba(99,102,241,0.18)" : "rgba(99,102,241,0.1)") : "transparent", display: "flex", alignItems: "center", justifyContent: "center", transition: "background 0.15s" }}>
-                    <Icon size={18} strokeWidth={active ? 2.2 : 1.8} />
+                  <div style={{ width: 30, height: 28, borderRadius: 7, background: active ? (darkMode ? "rgba(99,102,241,0.18)" : "rgba(99,102,241,0.1)") : "transparent", display: "flex", alignItems: "center", justifyContent: "center", transition: "background 0.15s" }}>
+                    <Icon size={16} strokeWidth={active ? 2.2 : 1.8} />
                   </div>
-                  <span style={{ fontSize: 9, fontWeight: active ? 700 : 500, letterSpacing: "0.01em", whiteSpace: "nowrap" }}>{label}</span>
+                  <span style={{ fontSize: 8, fontWeight: active ? 700 : 500, letterSpacing: "0.01em", whiteSpace: "nowrap" }}>{label}</span>
                 </button>
               );
             })}
