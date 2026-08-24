@@ -2370,31 +2370,58 @@ function toggleVersion(version) {
               </div>
             )}
 
-            <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(320px,1fr))", gap: 16 }}>
+            <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(300px,1fr))", gap: 14 }}>
               {goals.length === 0 && <EmptyState icon="💰" text="Noch keine Sparziele" sub="Definiere oben worauf du sparst." />}
               {goals.map((goal) => {
                 const allocated = Number(goal.allocated || 0);
+                const target = Number(goal.target || 0);
                 const progress = getGoalProgress(goal);
+                const remaining = Math.max(target - allocated, 0);
                 const maxAlloc = allocated + freeOnSavings;
+                const isNearDone = progress >= 80;
+                const isDone = progress >= 100;
+                const barColor = isDone ? "#16a34a" : isNearDone ? "#22c55e" : "#6366f1";
+                const monthsLeft = goal.deadline ? Math.max(Math.ceil((new Date(goal.deadline) - new Date()) / (1000 * 60 * 60 * 24 * 30)), 1) : null;
+                const perMonth = monthsLeft && remaining > 0 ? remaining / monthsLeft : null;
                 return (
                   <div key={goal.id} style={{ ...s.card, padding: 18 }}>
-                    <div style={{ display: "flex", justifyContent: "space-between", gap: 12 }}>
-                      <div>
-                        <div style={{ fontWeight: 800, fontSize: 20 }}>{goal.name}</div>
-                        <div style={{ fontSize: 14, color: s.textMuted, marginTop: 4 }}>{money(allocated, currency)} von {money(goal.target, currency)} zugewiesen</div>
+                    <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", gap: 12, marginBottom: 14 }}>
+                      <div style={{ flex: 1, minWidth: 0 }}>
+                        <div style={{ display: "flex", alignItems: "center", gap: 8, flexWrap: "wrap" }}>
+                          <span style={{ fontWeight: 800, fontSize: 17 }}>{goal.name}</span>
+                          {isDone && <span style={{ fontSize: 11, fontWeight: 700, padding: "2px 8px", borderRadius: 20, background: "#dcfce7", color: "#15803d" }}>Erreicht ✓</span>}
+                        </div>
+                        <div style={{ fontSize: 13, color: s.textMuted, marginTop: 3 }}>{money(target, currency)} Ziel</div>
                       </div>
-                      <button style={{ ...s.buttonSecondary, width: 44, padding: 0 }} onClick={() => deleteGoal(goal.id)}><Trash2 size={16} /></button>
+                      <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+                        <span style={{ fontWeight: 800, fontSize: 20, color: barColor }}>{Math.round(progress)}%</span>
+                        <button style={{ ...s.buttonSecondary, width: 34, height: 34, padding: 0 }} onClick={() => deleteGoal(goal.id)}><Trash2 size={14} /></button>
+                      </div>
                     </div>
-                    <ProgressBar value={progress} color="#16a34a" dark={darkMode} />
-                    <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(110px,1fr))", gap: 10, marginTop: 14 }}>
-                      <div style={s.softCard}><div style={{ color: s.textMuted, fontSize: 13 }}>Zielbetrag</div><div style={{ fontWeight: 800, marginTop: 5 }}>{money(goal.target, currency)}</div></div>
-                      <div style={{ ...s.softCard, background: darkMode ? "rgba(22,163,74,0.12)" : "#ecfdf5", borderColor: darkMode ? "rgba(22,163,74,0.25)" : "#bbf7d0" }}><div style={{ color: darkMode ? "#86efac" : "#15803d", fontSize: 13 }}>Zugewiesen</div><div style={{ fontWeight: 800, marginTop: 5 }}>{money(allocated, currency)}</div></div>
-                      <div style={s.softCard}><div style={{ color: s.textMuted, fontSize: 13 }}>Noch nötig</div><div style={{ fontWeight: 800, marginTop: 5 }}>{money(Math.max(goal.target - allocated, 0), currency)}</div></div>
+
+                    <div style={{ height: 8, borderRadius: 4, background: darkMode ? "rgba(255,255,255,0.1)" : "#e5e7eb", overflow: "hidden" }}>
+                      <div style={{ height: "100%", width: `${progress}%`, borderRadius: 4, background: barColor, transition: "width 0.4s ease" }} />
                     </div>
-                    <div style={{ marginTop: 14 }}>
-                      <div style={{ fontSize: 13, color: s.textMuted, marginBottom: 6 }}>Vom Sparkonto zuweisen (max. {money(maxAlloc, currency)})</div>
-                      <input style={s.input} type="number" min="0" max={maxAlloc} value={allocated || ""} placeholder="0" onChange={(e) => updateGoalAllocated(goal.id, Math.min(Number(e.target.value), maxAlloc))} />
+
+                    <div style={{ display: "flex", justifyContent: "space-between", marginTop: 8, fontSize: 12 }}>
+                      <span style={{ color: s.textMuted }}>{money(allocated, currency)} gespart</span>
+                      {remaining > 0
+                        ? <span style={{ color: darkMode ? "#f87171" : "#dc2626", fontWeight: 600 }}>{money(remaining, currency)} noch nötig</span>
+                        : <span style={{ color: "#16a34a", fontWeight: 600 }}>Ziel erreicht!</span>
+                      }
                     </div>
+
+                    {perMonth && (
+                      <div style={{ marginTop: 6, fontSize: 12, color: s.textMuted }}>
+                        ca. <strong style={{ color: s.text }}>{money(Math.ceil(perMonth), currency)}/Monat</strong> bis {new Date(goal.deadline).toLocaleDateString("de-CH", { month: "short", year: "numeric" })}
+                      </div>
+                    )}
+
+                    <div style={{ marginTop: 14, display: "grid", gridTemplateColumns: "1fr auto", gap: 8, alignItems: "center" }}>
+                      <input style={s.input} type="number" min="0" max={maxAlloc} value={allocated || ""} placeholder={`Zuweisen (max. ${money(maxAlloc, currency)})`} onChange={(e) => updateGoalAllocated(goal.id, Math.min(Number(e.target.value), maxAlloc))} />
+                      <input style={{ ...s.input, width: 130 }} type="month" value={goal.deadline ? goal.deadline.slice(0,7) : ""} placeholder="Zieldatum" title="Zieldatum (optional)" onChange={(e) => setGoals((prev) => prev.map((g) => g.id === goal.id ? { ...g, deadline: e.target.value ? e.target.value + "-01" : null } : g))} />
+                    </div>
+                    <div style={{ fontSize: 11, color: s.textMuted, marginTop: 4 }}>Zieldatum optional — für Monatsrechnung</div>
                   </div>
                 );
               })}
