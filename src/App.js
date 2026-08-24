@@ -609,12 +609,14 @@ function styles(dark = false, mobile = false) {
       background: c.bg,
       color: c.text,
       fontFamily: "Inter, system-ui, sans-serif",
-      overflowX: "hidden",
     },
     container: {
       maxWidth: 1400,
       margin: "0 auto",
-      padding: mobile ? "12px 12px 96px" : "16px 16px 96px",
+      padding: mobile ? "12px 14px 96px" : "16px 16px 96px",
+      overflowX: "hidden",
+      boxSizing: "border-box",
+      width: "100%",
     },
     topNav: {
       background: c.navBg,
@@ -1962,7 +1964,7 @@ function toggleVersion(version) {
               const grouped = sorted.reduce((acc, t) => { (acc[t.date] = acc[t.date] || []).push(t); return acc; }, {});
               const dateKeys = Object.keys(grouped).sort((a,b) => b.localeCompare(a));
               return (
-                <div style={{ marginTop: 16, border: `1px solid ${darkMode ? "rgba(255,255,255,0.08)" : "#e5e7eb"}`, borderRadius: 12, overflow: "hidden" }}>
+                <div style={{ marginTop: 16, border: `1px solid ${darkMode ? "rgba(255,255,255,0.08)" : "#e5e7eb"}`, borderRadius: 12, overflow: "hidden", width: "100%", boxSizing: "border-box" }}>
                   {filteredTransactions.length === 0 && <div style={{ padding: 32 }}><EmptyState icon="🧾" text="Keine Buchungen gefunden" sub="Erfasse oben deine erste Zahlung." /></div>}
                   {dateKeys.map((date, di) => (
                     <div key={date}>
@@ -2006,7 +2008,7 @@ function toggleVersion(version) {
                                 </div>
                               </div>
                             ) : (
-                              <div style={{ display: "flex", alignItems: "center", gap: 12, padding: "11px 16px" }}>
+                              <div style={{ display: "flex", alignItems: "center", gap: 10, padding: "11px 14px", minWidth: 0, overflow: "hidden" }}>
                                 <div style={{ width: 38, height: 38, borderRadius: "50%", background: darkMode ? iconColor + "22" : iconBg, display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0, fontSize: 16, color: iconColor }}>
                                   {t.type === "income" ? "↑" : t.bucket === "saving" ? "🏦" : t.bucket === "fixed" ? "📌" : "↓"}
                                 </div>
