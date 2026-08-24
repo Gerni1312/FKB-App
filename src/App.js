@@ -10,7 +10,6 @@ import {
   Trash2,
   TrendingUp,
   TrendingDown,
-  CalendarDays,
   Search,
   BarChart3,
   Home,
