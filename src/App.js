@@ -1934,65 +1934,101 @@ function toggleVersion(version) {
                 </select>
               </div>
 
-            <div style={{ display: "grid", gap: 12, marginTop: 16 }}>
-              {filteredTransactions.length === 0 && <EmptyState icon="🧾" text="Keine Buchungen gefunden" sub="Erfasse oben deine erste Zahlung." />}
-              {filteredTransactions.map((t) => (
-                <div key={t.id} style={{ ...s.softCard, background: s.surface }}>
-                  {editingTransactionId === t.id ? (
-                    <div style={{ display: "grid", gap: 10 }}>
-                      <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(160px,1fr))", gap: 10 }}>
-                        <select style={s.input} value={editTransaction.type} onChange={(e) => { const isIncome = e.target.value === "income"; setEditTransaction((p) => ({ ...p, type: e.target.value, bucket: isIncome ? "income" : "flex", targetAccount: "main", category: isIncome ? "Lohn" : "Essen" })); }}>
-                          <option value="income">Einnahme</option>
-                          <option value="expense">Ausgabe</option>
-                        </select>
-                        {editTransaction.type === "income" ? (
-                          <select style={s.input} value={editTransaction.targetAccount} onChange={(e) => setEditTransaction((p) => ({ ...p, targetAccount: e.target.value }))}>
-                            <option value="main">→ Hauptkonto</option>
-                            <option value="savings">→ Sparkonto</option>
-                          </select>
-                        ) : (
-                          <select style={s.input} value={editTransaction.bucket} onChange={(e) => setEditTransaction((p) => ({ ...p, bucket: e.target.value }))}>
-                            <option value="fixed">Fixkosten</option>
-                            <option value="flex">Variable Ausgaben</option>
-                            <option value="saving">Sparen</option>
-                          </select>
-                        )}
-                        <select style={s.input} value={editTransaction.category} onChange={(e) => setEditTransaction((p) => ({ ...p, category: e.target.value }))}>
-                          {(editTransaction.type === "income" ? incomeCategories : categories).map((cat) => <option key={cat} value={cat}>{cat}</option>)}
-                        </select>
-                        <input style={s.input} type="number" placeholder="Betrag" value={editTransaction.amount} onChange={(e) => setEditTransaction((p) => ({ ...p, amount: e.target.value }))} />
-                        <input style={s.input} type="date" value={editTransaction.date} onChange={(e) => setEditTransaction((p) => ({ ...p, date: e.target.value }))} />
-                        <input style={s.input} placeholder="Notiz" value={editTransaction.note} onChange={(e) => setEditTransaction((p) => ({ ...p, note: e.target.value }))} />
+            {(() => {
+              const catColors = {
+                Lohn: ["#dcfce7","#16a34a"], Freelance: ["#dcfce7","#16a34a"], Bonus: ["#dcfce7","#16a34a"], Zinsen: ["#dcfce7","#16a34a"],
+                Miete: ["#fee2e2","#dc2626"], Versicherung: ["#fee2e2","#dc2626"], Strom: ["#fef3c7","#d97706"], Internet: ["#fef3c7","#d97706"],
+                Essen: ["#fef3c7","#d97706"], Lebensmittel: ["#fef3c7","#d97706"], Restaurant: ["#fef3c7","#d97706"],
+                Freizeit: ["#ede9fe","#7c3aed"], Sport: ["#ede9fe","#7c3aed"], Abonnement: ["#ede9fe","#7c3aed"],
+                Auto: ["#dbeafe","#1d4ed8"], Transport: ["#dbeafe","#1d4ed8"], Tanken: ["#dbeafe","#1d4ed8"],
+                Kleidung: ["#fce7f3","#be185d"], Gesundheit: ["#fce7f3","#be185d"],
+                Sparen: ["#e0f2fe","#0369a1"], Sparkonto: ["#e0f2fe","#0369a1"],
+              };
+              const getCatColor = (cat) => catColors[cat] || (["#f3f4f6","#6b7280"]);
+              const bucketLabel = { income: "Einnahme", fixed: "Fixkosten", flex: "Variabel", saving: "Sparen" };
+              const today = new Date().toISOString().slice(0,10);
+              const yesterday = new Date(Date.now() - 86400000).toISOString().slice(0,10);
+              const formatDateHeader = (d) => {
+                if (d === today) return "Heute";
+                if (d === yesterday) return "Gestern";
+                const dt = new Date(d + "T00:00:00");
+                return dt.toLocaleDateString("de-CH", { day: "numeric", month: "short" });
+              };
+              const sorted = [...filteredTransactions].sort((a,b) => b.date.localeCompare(a.date));
+              const grouped = sorted.reduce((acc, t) => { (acc[t.date] = acc[t.date] || []).push(t); return acc; }, {});
+              const dateKeys = Object.keys(grouped).sort((a,b) => b.localeCompare(a));
+              return (
+                <div style={{ marginTop: 16, border: `1px solid ${darkMode ? "rgba(255,255,255,0.08)" : "#e5e7eb"}`, borderRadius: 12, overflow: "hidden" }}>
+                  {filteredTransactions.length === 0 && <div style={{ padding: 32 }}><EmptyState icon="🧾" text="Keine Buchungen gefunden" sub="Erfasse oben deine erste Zahlung." /></div>}
+                  {dateKeys.map((date, di) => (
+                    <div key={date}>
+                      <div style={{ padding: "8px 16px", fontSize: 11, fontWeight: 700, letterSpacing: "0.06em", textTransform: "uppercase", color: s.textMuted, background: darkMode ? "rgba(255,255,255,0.03)" : "#f9fafb", borderTop: di > 0 ? `1px solid ${darkMode ? "rgba(255,255,255,0.06)" : "#f3f4f6"}` : "none" }}>
+                        {formatDateHeader(date)}
                       </div>
-                      <div style={{ display: "flex", gap: 8 }}>
-                        <button style={s.button} onClick={() => saveEditTransaction(t.id)}>Speichern</button>
-                        <button style={s.buttonSecondary} onClick={cancelEditTransaction}>Abbrechen</button>
-                      </div>
+                      {grouped[date].map((t, i) => {
+                        const [iconBg, iconColor] = getCatColor(t.category);
+                        const isEditing = editingTransactionId === t.id;
+                        return (
+                          <div key={t.id} style={{ borderTop: i > 0 ? `1px solid ${darkMode ? "rgba(255,255,255,0.05)" : "#f3f4f6"}` : "none", background: isEditing ? (darkMode ? "rgba(99,102,241,0.08)" : "#f5f3ff") : "transparent" }}>
+                            {isEditing ? (
+                              <div style={{ padding: "14px 16px", display: "grid", gap: 10 }}>
+                                <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(160px,1fr))", gap: 10 }}>
+                                  <select style={s.input} value={editTransaction.type} onChange={(e) => { const isIncome = e.target.value === "income"; setEditTransaction((p) => ({ ...p, type: e.target.value, bucket: isIncome ? "income" : "flex", targetAccount: "main", category: isIncome ? "Lohn" : "Essen" })); }}>
+                                    <option value="income">Einnahme</option>
+                                    <option value="expense">Ausgabe</option>
+                                  </select>
+                                  {editTransaction.type === "income" ? (
+                                    <select style={s.input} value={editTransaction.targetAccount} onChange={(e) => setEditTransaction((p) => ({ ...p, targetAccount: e.target.value }))}>
+                                      <option value="main">→ Hauptkonto</option>
+                                      <option value="savings">→ Sparkonto</option>
+                                    </select>
+                                  ) : (
+                                    <select style={s.input} value={editTransaction.bucket} onChange={(e) => setEditTransaction((p) => ({ ...p, bucket: e.target.value }))}>
+                                      <option value="fixed">Fixkosten</option>
+                                      <option value="flex">Variable Ausgaben</option>
+                                      <option value="saving">Sparen</option>
+                                    </select>
+                                  )}
+                                  <select style={s.input} value={editTransaction.category} onChange={(e) => setEditTransaction((p) => ({ ...p, category: e.target.value }))}>
+                                    {(editTransaction.type === "income" ? incomeCategories : categories).map((cat) => <option key={cat} value={cat}>{cat}</option>)}
+                                  </select>
+                                  <input style={s.input} type="number" placeholder="Betrag" value={editTransaction.amount} onChange={(e) => setEditTransaction((p) => ({ ...p, amount: e.target.value }))} />
+                                  <input style={s.input} type="date" value={editTransaction.date} onChange={(e) => setEditTransaction((p) => ({ ...p, date: e.target.value }))} />
+                                  <input style={s.input} placeholder="Notiz" value={editTransaction.note} onChange={(e) => setEditTransaction((p) => ({ ...p, note: e.target.value }))} />
+                                </div>
+                                <div style={{ display: "flex", gap: 8 }}>
+                                  <button style={s.button} onClick={() => saveEditTransaction(t.id)}>Speichern</button>
+                                  <button style={s.buttonSecondary} onClick={cancelEditTransaction}>Abbrechen</button>
+                                </div>
+                              </div>
+                            ) : (
+                              <div style={{ display: "flex", alignItems: "center", gap: 12, padding: "11px 16px" }}>
+                                <div style={{ width: 38, height: 38, borderRadius: "50%", background: darkMode ? iconColor + "22" : iconBg, display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0, fontSize: 16, color: iconColor }}>
+                                  {t.type === "income" ? "↑" : t.bucket === "saving" ? "🏦" : t.bucket === "fixed" ? "📌" : "↓"}
+                                </div>
+                                <div style={{ flex: 1, minWidth: 0 }}>
+                                  <div style={{ display: "flex", alignItems: "center", gap: 6, flexWrap: "wrap" }}>
+                                    <span style={{ fontWeight: 600, fontSize: 14, color: s.text }}>{t.category}</span>
+                                    <span style={{ fontSize: 11, padding: "1px 6px", borderRadius: 4, background: darkMode ? "rgba(255,255,255,0.08)" : "#f3f4f6", color: s.textMuted }}>{bucketLabel[t.bucket] || t.bucket}</span>
+                                    {(t.auto || (t.note && t.note.startsWith("[AUTO]"))) && <span style={{ fontSize: 11, background: darkMode ? "rgba(14,165,233,0.15)" : "#e0f2fe", color: darkMode ? "#7dd3fc" : "#0369a1", borderRadius: 4, padding: "1px 6px", fontWeight: 600 }}>🔁</span>}
+                                  </div>
+                                  {(t.note && t.note.replace(/^\[AUTO\]\s*/, "")) && <div style={{ fontSize: 12, color: s.textMuted, marginTop: 1, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{t.note.replace(/^\[AUTO\]\s*/, "")}</div>}
+                                </div>
+                                <div style={{ display: "flex", alignItems: "center", gap: 6, flexShrink: 0 }}>
+                                  <span style={{ fontWeight: 700, fontSize: 15, color: t.type === "income" ? "#16a34a" : "#dc2626" }}>{t.type === "income" ? "+" : "−"}{money(t.amount, currency)}</span>
+                                  <button style={{ ...s.buttonSecondary, width: 32, height: 32, padding: 0, fontSize: 13 }} onClick={() => startEditTransaction(t)}>✏️</button>
+                                  <button style={{ ...s.buttonSecondary, width: 32, height: 32, padding: 0 }} onClick={() => deleteTransaction(t.id)}><Trash2 size={14} /></button>
+                                </div>
+                              </div>
+                            )}
+                          </div>
+                        );
+                      })}
                     </div>
-                  ) : (
-                    <div style={{ display: "flex", justifyContent: "space-between", gap: 12, flexWrap: "wrap" }}>
-                      <div style={{ minWidth: 0 }}>
-                        <div style={{ display: "flex", gap: 8, alignItems: "center", flexWrap: "wrap" }}>
-                          <div style={{ fontWeight: 800, fontSize: 18 }}>{t.category}</div>
-                          <span style={s.badge}>{{ income: "Einnahme", fixed: "Fixkosten", flex: "Variabel", saving: "Sparen" }[t.bucket] || t.bucket}</span>
-                          {(t.auto || (t.note && t.note.startsWith("[AUTO]"))) && <span style={{ fontSize: 11, background: darkMode ? "rgba(14,165,233,0.15)" : "#e0f2fe", color: darkMode ? "#7dd3fc" : "#0369a1", borderRadius: 6, padding: "2px 7px", fontWeight: 600 }}>🔁 Wiederkehrend</span>}
-                        </div>
-                        <div style={{ color: "#71717a", marginTop: 6, fontSize: 14 }}>{(t.note || "Keine Notiz").replace(/^\[AUTO\]\s*/, "")}</div>
-                        <div style={{ color: "#71717a", marginTop: 8, fontSize: 12, display: "flex", gap: 12, flexWrap: "wrap" }}>
-                          <span style={{ display: "inline-flex", alignItems: "center", gap: 5 }}><CalendarDays size={12} /> {t.date}</span>
-                          <span>{t.type === "income" ? "Einnahme" : "Ausgabe"}</span>
-                        </div>
-                      </div>
-                      <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
-                        <div style={{ fontWeight: 900, fontSize: 22, color: t.type === "income" ? "#16a34a" : "#dc2626" }}>{t.type === "income" ? "+" : "-"}{money(t.amount, currency)}</div>
-                        <button style={{ ...s.buttonSecondary, width: 44, padding: 0 }} onClick={() => startEditTransaction(t)}>✏️</button>
-                        <button style={{ ...s.buttonSecondary, width: 44, padding: 0 }} onClick={() => deleteTransaction(t.id)}><Trash2 size={16} /></button>
-                      </div>
-                    </div>
-                  )}
+                  ))}
                 </div>
-              ))}
-            </div>
+              );
+            })()}
             </div>
           </div>
         )}
