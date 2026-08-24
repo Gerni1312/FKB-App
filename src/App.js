@@ -2448,10 +2448,11 @@ function toggleVersion(version) {
                   ))}
                 </div>
               </div>
-              <div style={{ display: "grid", gridTemplateColumns: "repeat(7,1fr)", gap: 8, fontSize: 12, color: "#71717a", fontWeight: 800, marginBottom: 10 }}>
+              <div style={{ overflowX: "auto", WebkitOverflowScrolling: "touch" }}>
+              <div style={{ display: "grid", gridTemplateColumns: "repeat(7,minmax(44px,1fr))", gap: 6, fontSize: 12, color: "#71717a", fontWeight: 800, marginBottom: 8, minWidth: 308 }}>
                 {["Mo", "Di", "Mi", "Do", "Fr", "Sa", "So"].map((d) => <div key={d} style={{ textAlign: "center" }}>{d}</div>)}
               </div>
-              <div style={{ display: "grid", gridTemplateColumns: "repeat(7,1fr)", gap: 8 }}>
+              <div style={{ display: "grid", gridTemplateColumns: "repeat(7,minmax(44px,1fr))", gap: 6, minWidth: 308 }}>
                 {calendarCells.map((cell, index) => {
                   if (!cell) return <div key={index} style={{ minHeight: 92, borderRadius: 18, background: darkMode ? "rgba(255,255,255,0.08)" : "#e4e4e7" }} />;
                   const tone = cell.net < 0
@@ -2469,6 +2470,7 @@ function toggleVersion(version) {
                     </button>
                   );
                 })}
+              </div>
               </div>
             </div>
 
