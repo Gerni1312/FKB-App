@@ -537,6 +537,18 @@ function getBudgetStatus(progress, dark = false) {
   return                      { label: "Stabil",        color: dark ? "#86efac" : "#15803d", bg: dark ? "rgba(22,163,74,0.12)"  : "#f0fdf4", border: dark ? "rgba(22,163,74,0.25)"  : "#bbf7d0" };
 }
 
+function downloadCsv(filename, rows) {
+  const escape = (v) => `"${String(v ?? "").replace(/"/g, '""')}"`;
+  const csv = rows.map((r) => r.map(escape).join(";")).join("\n");
+  const blob = new Blob(["﻿" + csv], { type: "text/csv;charset=utf-8;" });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement("a");
+  a.href = url;
+  a.download = filename;
+  a.click();
+  URL.revokeObjectURL(url);
+}
+
 function downloadJson(filename, data) {
   const blob = new Blob([JSON.stringify(data, null, 2)], { type: "application/json" });
   const url = URL.createObjectURL(blob);
@@ -1467,6 +1479,27 @@ const [openVersions, setOpenVersions] = useState({
 
   function exportData() {
     downloadJson(`sigma-finance-${selectedMonthKey}.json`, { exportedAt: new Date().toISOString(), version: 2, transactions, budgets, recurring, goals, mainAccount, savingsAccount, settings: { currency, weeklyMode, monthOffset, payday, darkMode } });
+  }
+
+  function exportCsv(year) {
+    const filtered = year === "all"
+      ? [...transactions]
+      : transactions.filter((t) => new Date(t.date).getFullYear() === year);
+    filtered.sort((a, b) => new Date(a.date) - new Date(b.date));
+    const typeLabel = { income: "Einnahme", expense: "Ausgabe" };
+    const bucketLabel = { income: "Einkommen", fixed: "Fixkosten", flex: "Variabel", saving: "Sparen" };
+    const header = ["Datum", "Typ", "Kategorie", "Bereich", "Betrag", "Notiz", "Konto"];
+    const rows = filtered.map((t) => [
+      t.date,
+      typeLabel[t.type] || t.type,
+      t.category || "",
+      bucketLabel[t.bucket] || t.bucket || "",
+      (t.type === "expense" ? -1 : 1) * Number(t.amount),
+      (t.note || "").replace(/^\[AUTO\]\s*/, ""),
+      t.targetAccount === "savings" ? "Sparkonto" : "Hauptkonto",
+    ]);
+    const label = year === "all" ? "alle" : year;
+    downloadCsv(`finanzen-${label}.csv`, [header, ...rows]);
   }
 
   function handleImport(event) {
@@ -2594,6 +2627,24 @@ function toggleVersion(version) {
               <button style={{ ...s.buttonSecondary, flex: 1, justifyContent: "center" }} onClick={exportData}><Download size={16} /> Export</button>
               <button style={{ ...s.buttonSecondary, flex: 1, justifyContent: "center" }} onClick={() => fileInputRef.current?.click()}><Upload size={16} /> Import</button>
               <input ref={fileInputRef} type="file" accept="application/json" style={{ display: "none" }} onChange={handleImport} />
+            </div>
+          </div>
+
+          <div style={s.softCard}>
+            <div style={{ fontWeight: 800, color: s.text }}>CSV-Export</div>
+            <div style={{ fontSize: 14, color: s.textMuted, marginTop: 4, marginBottom: 14 }}>Alle Buchungen als Excel-kompatible Tabelle exportieren — ideal fürs Steuerjahr.</div>
+            <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
+              {Array.from(new Set(transactions.map((t) => new Date(t.date).getFullYear()))).sort((a, b) => b - a).map((year) => (
+                <button key={year} style={{ ...s.buttonSecondary, justifyContent: "center" }} onClick={() => exportCsv(year)}>
+                  <Download size={15} /> {year}
+                </button>
+              ))}
+              {transactions.length > 0 && (
+                <button style={{ ...s.buttonSecondary, justifyContent: "center" }} onClick={() => exportCsv("all")}>
+                  <Download size={15} /> Alle
+                </button>
+              )}
+              {transactions.length === 0 && <span style={{ fontSize: 13, color: s.textMuted }}>Noch keine Buchungen vorhanden.</span>}
             </div>
           </div>
 
