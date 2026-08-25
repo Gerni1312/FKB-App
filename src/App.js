@@ -863,6 +863,7 @@ function App() {
   const [tab, setTab] = useState("dashboard");
   const [search, setSearch] = useState("");
   const [filterBucket, setFilterBucket] = useState("all");
+  const [txMonthFilter, setTxMonthFilter] = useState("current");
   const [selectedCalendarDay, setSelectedCalendarDay] = useState(null);
   const [categoryView, setCategoryView] = useState("expense");
   const [monthRange, setMonthRange] = useState(6);
@@ -985,7 +986,11 @@ const [openVersions, setOpenVersions] = useState({
   }, [user, dataLoaded, transactions, budgets, recurring, goals, debts, mainAccount, savingsAccount, currency, weeklyMode, monthOffset, payday, darkMode, username]);
 
   useEffect(() => {
-    // Nur Einträge die wirklich dran sind (jährliche nur im richtigen Monat)
+    const today = new Date().toISOString().slice(0, 10);
+    const realMonthKey = getMonthKey(new Date());
+    // Nur für den echten aktuellen Monat buchen, nie bei Monats-Navigation
+    if (selectedMonthKey !== realMonthKey) return;
+
     const recurringToApply = recurring.filter((r) => {
       if (!r.active || r.lastAppliedMonth === selectedMonthKey) return false;
       if (r.frequency === "yearly") return (r.monthOfYear || 1) === selectedMonthDate.getMonth() + 1;
@@ -993,11 +998,12 @@ const [openVersions, setOpenVersions] = useState({
     });
     if (recurringToApply.length === 0) return;
 
-    // Berechnung komplett vor den State-Updates
     const newTransactions = [];
     const updatedItems = new Map();
     for (const r of recurringToApply) {
       const autoDate = getRecurringDateForMonth(selectedMonthDate, r.dayOfMonth);
+      // Nicht buchen wenn der Fälligkeitstag noch nicht erreicht ist
+      if (autoDate > today) continue;
       const transactionExists = transactions.some((t) => t.auto && t.note === r.title && t.date === autoDate && t.amount === Number(r.amount) && t.category === r.category);
       if (!transactionExists) {
         newTransactions.push({ id: Date.now() + Math.random(), type: r.type, category: r.category, amount: Number(r.amount), note: r.title, date: autoDate, bucket: r.bucket, affectsAccount: true, auto: true });
@@ -1092,13 +1098,19 @@ const [openVersions, setOpenVersions] = useState({
     return { goal, actual, progress, label, color, bg, border };
   }, [savingsAccount.plannedMonthlyDeposit, totals.saving, darkMode]);
 
-  const filteredTransactions = useMemo(() => monthTransactions
-    .filter((t) => (filterBucket === "all" ? true : t.bucket === filterBucket))
-    .filter((t) => {
-      const q = search.toLowerCase();
-      return t.category.toLowerCase().includes(q) || t.note.toLowerCase().includes(q) || t.date.includes(q);
-    })
-    .sort((a, b) => new Date(b.date) - new Date(a.date)), [monthTransactions, search, filterBucket]);
+  const filteredTransactions = useMemo(() => {
+    const base = txMonthFilter === "all" ? transactions
+      : txMonthFilter === "year"
+        ? transactions.filter((t) => new Date(t.date).getFullYear() === new Date().getFullYear())
+        : monthTransactions;
+    return base
+      .filter((t) => (filterBucket === "all" ? true : t.bucket === filterBucket))
+      .filter((t) => {
+        const q = search.toLowerCase();
+        return t.category.toLowerCase().includes(q) || t.note.toLowerCase().includes(q) || t.date.includes(q);
+      })
+      .sort((a, b) => new Date(b.date) - new Date(a.date));
+  }, [txMonthFilter, transactions, monthTransactions, search, filterBucket]);
 
   const monthlyPlan = useMemo(() => {
     const freeToUse = totals.income - totals.fixed - totals.saving;
@@ -1923,18 +1935,23 @@ function toggleVersion(version) {
             </div>
 
             <div style={{ ...s.card, padding: 18 }}>
-              <SectionTitle title="Buchungen" description="Alles im gewählten Monat" />
-              <div style={{ display: "grid", gridTemplateColumns: mobileOnly ? "1fr" : "1fr minmax(180px, 220px)", gap: 12, minWidth: 0 }}>
+              <SectionTitle title="Buchungen" description={txMonthFilter === "all" ? "Alle Buchungen" : txMonthFilter === "year" ? `Dieses Jahr (${new Date().getFullYear()})` : `Aktueller Monat — ${selectedMonthLabel}`} />
+              <div style={{ display: "grid", gridTemplateColumns: mobileOnly ? "1fr" : "1fr minmax(160px, 200px) minmax(140px, 180px)", gap: 12, minWidth: 0 }}>
                 <div style={{ position: "relative" }}>
                   <Search size={16} color="#71717a" style={{ position: "absolute", left: 14, top: 14 }} />
                   <input style={{ ...s.input, paddingLeft: 40 }} placeholder="Suche nach Kategorie, Notiz oder Datum" value={search} onChange={(e) => setSearch(e.target.value)} />
                 </div>
                 <select style={s.input} value={filterBucket} onChange={(e) => setFilterBucket(e.target.value)}>
-                  <option value="all">Alle Buchungen</option>
+                  <option value="all">Alle Typen</option>
                   <option value="income">Einkommen</option>
                   <option value="fixed">Fixkosten</option>
                   <option value="flex">Variable Ausgaben</option>
                   <option value="saving">Sparen</option>
+                </select>
+                <select style={s.input} value={txMonthFilter} onChange={(e) => setTxMonthFilter(e.target.value)}>
+                  <option value="current">Dieser Monat</option>
+                  <option value="year">Dieses Jahr</option>
+                  <option value="all">Alle Buchungen</option>
                 </select>
               </div>
 
