@@ -811,7 +811,7 @@ function MoMBadge({ current, previous }) {
   const neutral = diff === 0;
   if (neutral) return null;
   return (
-    <span style={{ fontSize: 11, fontWeight: 700, padding: "2px 7px", borderRadius: 6, background: up ? "rgba(22,163,74,0.15)" : "rgba(220,38,38,0.15)", color: up ? "#16a34a" : "#dc2626" }}>
+    <span style={{ fontSize: 11, fontWeight: 700, padding: "2px 7px", borderRadius: 6, background: "rgba(255,255,255,0.18)", color: "white" }}>
       {up ? "↑" : "↓"} {pct}% vs. Vormonat
     </span>
   );
