@@ -430,30 +430,13 @@ const chartColors = ["#22c55e", "#f59e0b", "#ef4444", "#0ea5e9", "#8b5cf6", "#14
 
 
 const seedData = {
-  transactions: [
-    { id: 1, type: "income", category: "Lohn", amount: 880, note: "Monatslohn", date: "2026-04-01", bucket: "income" },
-    { id: 2, type: "expense", category: "Handy", amount: 39, note: "Abo", date: "2026-04-02", bucket: "fixed" },
-    { id: 3, type: "expense", category: "Freizeit", amount: 24, note: "Mit Freunden trinken", date: "2026-04-03", bucket: "flex" },
-    { id: 4, type: "expense", category: "Sparen", amount: 120, note: "Auf Sparkonto", date: "2026-04-03", bucket: "saving" },
-    { id: 5, type: "income", category: "Sparkonto Rückzahlung", amount: 60, note: "Vom Sparkonto zurück aufs Hauptkonto", date: "2026-04-08", bucket: "income" },
-    { id: 6, type: "expense", category: "Freizeit", amount: 42, note: "Wochenende", date: "2026-04-11", bucket: "flex" },
-    { id: 7, type: "expense", category: "Essen unterwegs", amount: 14.5, note: "Snack und Drink", date: "2026-04-15", bucket: "flex" },
-  ],
-  budgets: [
-    { id: 1, name: "Freizeit", limit: 180, resetMode: "monthly" },
-    { id: 2, name: "Essen unterwegs", limit: 80, resetMode: "monthly" },
-    { id: 3, name: "Gaming", limit: 50, resetMode: "monthly" },
-    { id: 4, name: "Sparen", limit: 150, resetMode: "monthly" },
-  ],
-  recurring: [
-    { id: 1, title: "Handy-Abo", amount: 39, category: "Handy", bucket: "fixed", type: "expense", dayOfMonth: 2, note: "Monatlich automatisch", active: true, lastAppliedMonth: "2026-04" },
-  ],
-  goals: [
-    { id: 1, name: "Notgroschen", target: 500, current: 120 },
-    { id: 2, name: "Neue Kopfhörer", target: 250, current: 40 },
-  ],
-  mainAccount: { balance: 220 },
-  savingsAccount: { balance: 400, plannedMonthlyDeposit: 150, borrowedOut: 80, expectedInterest: 2 },
+  transactions: [],
+  budgets: [],
+  recurring: [],
+  goals: [],
+  debts: [],
+  mainAccount: { balance: 0 },
+  savingsAccount: { balance: 0, plannedMonthlyDeposit: 0, borrowedOut: 0, expectedInterest: 0 },
   settings: { currency: "CHF", weeklyMode: true, monthOffset: 0, payday: 25, darkMode: false, username: "" },
 };
 
