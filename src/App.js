@@ -441,6 +441,8 @@ const seedData = {
   settings: { currency: "CHF", weeklyMode: true, monthOffset: 0, payday: 25, darkMode: false, username: "" },
 };
 
+function r2(n) { return Math.round((n || 0) * 100) / 100; }
+
 function money(value, currency = "CHF") {
   return new Intl.NumberFormat("de-CH", {
     style: "currency",
@@ -1008,7 +1010,7 @@ const [openVersions, setOpenVersions] = useState({
     if (newTransactions.length > 0) {
       setTransactions((prev) => [...newTransactions, ...prev]);
       const balanceDelta = newTransactions.reduce((sum, t) => sum + (t.type === "income" ? t.amount : -t.amount), 0);
-      if (balanceDelta !== 0) setMainAccount((p) => ({ ...p, balance: p.balance + balanceDelta }));
+      if (balanceDelta !== 0) setMainAccount((p) => ({ ...p, balance: r2(p.balance + balanceDelta)}));
     }
   }, [dataLoaded, recurring, transactions]);
 
@@ -1182,12 +1184,12 @@ const [openVersions, setOpenVersions] = useState({
     setTransactions((prev) => [txn, ...prev]);
     if (newTransaction.type === "income") {
       if (newTransaction.targetAccount === "savings") {
-        setSavingsAccount((p) => ({ ...p, balance: p.balance + amount }));
+        setSavingsAccount((p) => ({ ...p, balance: r2(p.balance + amount) }));
       } else {
-        setMainAccount((p) => ({ ...p, balance: p.balance + amount }));
+        setMainAccount((p) => ({ ...p, balance: r2(p.balance + amount) }));
       }
     } else {
-      setMainAccount((p) => ({ ...p, balance: p.balance - amount }));
+      setMainAccount((p) => ({ ...p, balance: r2(p.balance - amount) }));
     }
     setNewTransaction({ type: "expense", category: "Essen", amount: "", note: "", date: new Date().toISOString().slice(0, 10), bucket: "flex", targetAccount: "main" });
   }
@@ -1198,12 +1200,12 @@ const [openVersions, setOpenVersions] = useState({
       const amount = Number(txn.amount);
       if (txn.type === "income") {
         if (txn.targetAccount === "savings") {
-          setSavingsAccount((p) => ({ ...p, balance: p.balance - amount }));
+          setSavingsAccount((p) => ({ ...p, balance: r2(p.balance - amount) }));
         } else {
-          setMainAccount((p) => ({ ...p, balance: p.balance - amount }));
+          setMainAccount((p) => ({ ...p, balance: r2(p.balance - amount) }));
         }
       } else {
-        setMainAccount((p) => ({ ...p, balance: p.balance + amount }));
+        setMainAccount((p) => ({ ...p, balance: r2(p.balance + amount) }));
       }
     }
     setTransactions((prev) => prev.filter((t) => t.id !== id));
@@ -1227,17 +1229,17 @@ const [openVersions, setOpenVersions] = useState({
       const oldAmt = Number(old.amount);
       if (old.type === "income") {
         old.targetAccount === "savings"
-          ? setSavingsAccount((p) => ({ ...p, balance: p.balance - oldAmt }))
-          : setMainAccount((p) => ({ ...p, balance: p.balance - oldAmt }));
+          ? setSavingsAccount((p) => ({ ...p, balance: r2(p.balance - oldAmt) }))
+          : setMainAccount((p) => ({ ...p, balance: r2(p.balance - oldAmt) }));
       } else {
-        setMainAccount((p) => ({ ...p, balance: p.balance + oldAmt }));
+        setMainAccount((p) => ({ ...p, balance: r2(p.balance + oldAmt) }));
       }
       if (editTransaction.type === "income") {
         editTransaction.targetAccount === "savings"
-          ? setSavingsAccount((p) => ({ ...p, balance: p.balance + newAmount }))
-          : setMainAccount((p) => ({ ...p, balance: p.balance + newAmount }));
+          ? setSavingsAccount((p) => ({ ...p, balance: r2(p.balance + newAmount) }))
+          : setMainAccount((p) => ({ ...p, balance: r2(p.balance + newAmount) }));
       } else {
-        setMainAccount((p) => ({ ...p, balance: p.balance - newAmount }));
+        setMainAccount((p) => ({ ...p, balance: r2(p.balance - newAmount) }));
       }
     }
     setTransactions((prev) => prev.map((t) => t.id === id ? { ...t, ...editTransaction, amount: newAmount } : t));
@@ -1315,9 +1317,9 @@ const [openVersions, setOpenVersions] = useState({
     const debt = { id: Date.now(), ...newDebt, amount, date: new Date().toISOString().slice(0, 10) };
     setDebts((prev) => [debt, ...prev]);
     if (newDebt.account === "savings") {
-      setSavingsAccount((p) => ({ ...p, balance: p.balance - amount }));
+      setSavingsAccount((p) => ({ ...p, balance: r2(p.balance - amount) }));
     } else {
-      setMainAccount((p) => ({ ...p, balance: p.balance - amount }));
+      setMainAccount((p) => ({ ...p, balance: r2(p.balance - amount) }));
     }
     setNewDebt({ person: "", amount: "", reason: "", account: "main", direction: "lent" });
   }
@@ -1327,9 +1329,9 @@ const [openVersions, setOpenVersions] = useState({
     if (!debt) return;
     if (debt.direction === "lent") {
       if (debt.account === "savings") {
-        setSavingsAccount((p) => ({ ...p, balance: p.balance + debt.amount }));
+        setSavingsAccount((p) => ({ ...p, balance: r2(p.balance + debt.amount) }));
       } else {
-        setMainAccount((p) => ({ ...p, balance: p.balance + debt.amount }));
+        setMainAccount((p) => ({ ...p, balance: r2(p.balance + debt.amount) }));
       }
     }
     setDebts((prev) => prev.filter((d) => d.id !== id));
@@ -1341,12 +1343,12 @@ const [openVersions, setOpenVersions] = useState({
     const today = new Date().toISOString().slice(0, 10);
 
     if (savingsTransfer.type === "deposit") {
-      setMainAccount((prev) => ({ ...prev, balance: Math.max(Number(prev.balance || 0) - amount, 0) }));
-      setSavingsAccount((prev) => ({ ...prev, balance: Number(prev.balance || 0) + amount }));
+      setMainAccount((prev) => ({ ...prev, balance: r2(Math.max(Number(prev.balance || 0) - amount, 0)) }));
+      setSavingsAccount((prev) => ({ ...prev, balance: r2(Number(prev.balance || 0) + amount) }));
       setTransactions((prev) => [{ id: Date.now() + Math.random(), type: "expense", category: "Sparen", amount, note: savingsTransfer.note || "Auf Sparkonto", date: today, bucket: "saving" }, ...prev]);
     } else {
-      setMainAccount((prev) => ({ ...prev, balance: Number(prev.balance || 0) + amount }));
-      setSavingsAccount((prev) => ({ ...prev, balance: Math.max(Number(prev.balance || 0) - amount, 0) }));
+      setMainAccount((prev) => ({ ...prev, balance: r2(Number(prev.balance || 0) + amount) }));
+      setSavingsAccount((prev) => ({ ...prev, balance: r2(Math.max(Number(prev.balance || 0) - amount, 0)) }));
       setTransactions((prev) => [{ id: Date.now() + Math.random(), type: "income", category: "Sparkonto Rückzahlung", amount, note: savingsTransfer.note || "Vom Sparkonto zurück", date: today, bucket: "income" }, ...prev]);
     }
 
@@ -2286,8 +2288,8 @@ function toggleVersion(version) {
                 <div style={s.softCard}>
                   <div style={{ fontWeight: 700, fontSize: 13, color: s.textMuted, textTransform: "uppercase", letterSpacing: "0.05em", marginBottom: 12 }}>Kontostände</div>
                   <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12 }}>
-                    <div><div style={{ fontSize: 13, color: s.textMuted, marginBottom: 6 }}>Stand Hauptkonto</div><input style={s.input} type="number" value={mainAccount.balance} onChange={(e) => setMainAccount((p) => ({ ...p, balance: Number(e.target.value || 0) }))} /></div>
-                    <div><div style={{ fontSize: 13, color: s.textMuted, marginBottom: 6 }}>Stand Sparkonto</div><input style={s.input} type="number" value={savingsAccount.balance} onChange={(e) => setSavingsAccount((p) => ({ ...p, balance: Number(e.target.value || 0) }))} /></div>
+                    <div><div style={{ fontSize: 13, color: s.textMuted, marginBottom: 6 }}>Stand Hauptkonto</div><input style={s.input} type="number" value={r2(mainAccount.balance)} onChange={(e) => setMainAccount((p) => ({ ...p, balance: r2(Number(e.target.value || 0)) }))} /></div>
+                    <div><div style={{ fontSize: 13, color: s.textMuted, marginBottom: 6 }}>Stand Sparkonto</div><input style={s.input} type="number" value={r2(savingsAccount.balance)} onChange={(e) => setSavingsAccount((p) => ({ ...p, balance: r2(Number(e.target.value || 0)) }))} /></div>
                     <div style={{ gridColumn: "span 2" }}><div style={{ fontSize: 13, color: s.textMuted, marginBottom: 6 }}>Geplant pro Monat (Sparen)</div><input style={s.input} type="number" value={savingsAccount.plannedMonthlyDeposit} onChange={(e) => setSavingsAccount((p) => ({ ...p, plannedMonthlyDeposit: Number(e.target.value || 0) }))} /></div>
                   </div>
                   <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: 10, marginTop: 14 }}>
