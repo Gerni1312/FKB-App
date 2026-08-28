@@ -969,6 +969,7 @@ const [openVersions, setOpenVersions] = useState({
   }, [user, dataLoaded, transactions, budgets, recurring, goals, debts, mainAccount, savingsAccount, currency, weeklyMode, monthOffset, payday, darkMode, username]);
 
   useEffect(() => {
+    if (!dataLoaded) return;
     const today = new Date().toISOString().slice(0, 10);
     const realMonthKey = getMonthKey(new Date());
     // Nur für den echten aktuellen Monat buchen, nie bei Monats-Navigation
@@ -994,14 +995,15 @@ const [openVersions, setOpenVersions] = useState({
       updatedItems.set(r.id, { ...r, lastAppliedMonth: selectedMonthKey });
     }
 
-    // Functional updater: arbeitet immer mit dem aktuellsten Stand
+    // Nur updaten wenn tatsächlich etwas gebucht wurde — verhindert Re-Render-Loop
+    if (updatedItems.size === 0) return;
     setRecurring((prev) => prev.map((r) => updatedItems.has(r.id) ? updatedItems.get(r.id) : r));
     if (newTransactions.length > 0) {
       setTransactions((prev) => [...newTransactions, ...prev]);
       const balanceDelta = newTransactions.reduce((sum, t) => sum + (t.type === "income" ? t.amount : -t.amount), 0);
       if (balanceDelta !== 0) setMainAccount((p) => ({ ...p, balance: p.balance + balanceDelta }));
     }
-  }, [selectedMonthKey, selectedMonthDate, recurring, transactions]);
+  }, [dataLoaded, selectedMonthKey, selectedMonthDate, recurring, transactions]);
 
   const monthTransactions = useMemo(
     () => transactions.filter((t) => inSelectedMonth(t.date, monthOffset, payday)),
