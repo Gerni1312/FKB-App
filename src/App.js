@@ -1152,6 +1152,24 @@ const [openVersions, setOpenVersions] = useState({
     const savingsNet = savingsTxns.reduce((s, t) => s + (t.type === "income" ? Number(t.amount) : -Number(t.amount)), 0);
     const mainBaseline = mainNow - mainNet;
     const savingsBaseline = savingsNow - savingsNet;
+
+    if (wealthRange === 1) {
+      // Tagesansicht: jeden Tag im aktuellen Monat
+      const { start } = getMonthBounds(0, payday);
+      const today = new Date();
+      const days = [];
+      for (let d = new Date(start); d <= today; d.setDate(d.getDate() + 1)) {
+        const cutoff = new Date(d);
+        cutoff.setHours(23, 59, 59, 999);
+        const mainUpTo = mainTxns.filter((t) => new Date(t.date) <= cutoff).reduce((s, t) => s + (t.type === "income" ? Number(t.amount) : -Number(t.amount)), 0);
+        const savingsUpTo = savingsTxns.filter((t) => new Date(t.date) <= cutoff).reduce((s, t) => s + (t.type === "income" ? Number(t.amount) : -Number(t.amount)), 0);
+        const main = Math.max(mainBaseline + mainUpTo, 0);
+        const savings = Math.max(savingsBaseline + savingsUpTo, 0);
+        days.push({ label: String(d.getDate()), main, savings, combined: main + savings });
+      }
+      return days;
+    }
+
     return Array.from({ length: wealthRange }, (_, i) => {
       const offset = i - (wealthRange - 1);
       const { start, end } = getMonthBounds(offset, payday);
@@ -2703,9 +2721,9 @@ function toggleVersion(version) {
                     <XAxis dataKey="label" tick={{ fontSize: 12, fill: darkMode ? "#a1a1aa" : "#71717a" }} />
                     <YAxis tick={{ fontSize: 12, fill: darkMode ? "#a1a1aa" : "#71717a" }} tickFormatter={(v) => `${currency}${v}`} width={55} />
                     <Tooltip formatter={(value, name) => [money(value, currency), { combined: "Gesamt", main: "Hauptkonto", savings: "Sparkonto" }[name] || name]} labelStyle={{ color: darkMode ? "#f4f4f5" : "#18181b" }} contentStyle={{ background: darkMode ? "#27272a" : "white", border: `1px solid ${darkMode ? "#3f3f46" : "#e4e4e7"}`, borderRadius: 10 }} />
-                    {wealthView === "combined" && <Line type="monotone" dataKey="combined" stroke="#6366f1" strokeWidth={3} dot={{ r: 4 }} activeDot={{ r: 6 }} />}
-                    {wealthView === "main" && <Line type="monotone" dataKey="main" stroke="#6366f1" strokeWidth={3} dot={{ r: 4 }} activeDot={{ r: 6 }} />}
-                    {wealthView === "savings" && <Line type="monotone" dataKey="savings" stroke="#f59e0b" strokeWidth={3} dot={{ r: 4 }} activeDot={{ r: 6 }} />}
+                    {wealthView === "combined" && <Line type="monotone" dataKey="combined" stroke="#6366f1" strokeWidth={3} dot={wealthRange === 1 ? false : { r: 4 }} activeDot={{ r: 6 }} />}
+                    {wealthView === "main" && <Line type="monotone" dataKey="main" stroke="#6366f1" strokeWidth={3} dot={wealthRange === 1 ? false : { r: 4 }} activeDot={{ r: 6 }} />}
+                    {wealthView === "savings" && <Line type="monotone" dataKey="savings" stroke="#f59e0b" strokeWidth={3} dot={wealthRange === 1 ? false : { r: 4 }} activeDot={{ r: 6 }} />}
                   </LineChart>
                 </ResponsiveContainer>
               </div>
