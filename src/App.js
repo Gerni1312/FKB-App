@@ -852,9 +852,11 @@ function App() {
   const [txMonthFilter, setTxMonthFilter] = useState("current");
   const [selectedCalendarDay, setSelectedCalendarDay] = useState(null);
   const [categoryView, setCategoryView] = useState("expense");
-  const [monthRange, setMonthRange] = useState(6);
+  const [monthRange, setMonthRange] = useState(3);
+  const [trendDaily, setTrendDaily] = useState(false);
   const [calendarFilter, setCalendarFilter] = useState("all");
   const [wealthView, setWealthView] = useState("combined");
+  const [wealthRange, setWealthRange] = useState(6);
   const [restbudgetDismissed, setRestbudgetDismissed] = useState(false);
   const [swUpdateAvailable, setSwUpdateAvailable] = useState(false);
 
@@ -1065,6 +1067,22 @@ const [openVersions, setOpenVersions] = useState({
     });
   }, [transactions, payday, monthRange]);
 
+  const dailyTrendData = useMemo(() => {
+    const { start, end } = getMonthBounds(0, payday);
+    const today = new Date();
+    const limit = today < end ? today : end;
+    const days = [];
+    for (let d = new Date(start); d <= limit; d.setDate(d.getDate() + 1)) {
+      const dateStr = d.toISOString().slice(0, 10);
+      const txns = transactions.filter((t) => t.date === dateStr);
+      const income = txns.filter((t) => t.type === "income").reduce((s, t) => s + Number(t.amount), 0);
+      const expenses = txns.filter((t) => t.type === "expense").reduce((s, t) => s + Number(t.amount), 0);
+      const savings = txns.filter((t) => t.bucket === "saving").reduce((s, t) => s + Number(t.amount), 0);
+      days.push({ label: String(d.getDate()), income, expenses, savings });
+    }
+    return days;
+  }, [transactions, payday]);
+
   const budgetsWithSpent = useMemo(() => budgets.map((b) => {
     const spent = getBudgetSpentForRange(transactions, b, monthOffset, payday);
     const progress = b.limit > 0 ? Math.min((spent / b.limit) * 100, 100) : 0;
@@ -1134,8 +1152,8 @@ const [openVersions, setOpenVersions] = useState({
     const savingsNet = savingsTxns.reduce((s, t) => s + (t.type === "income" ? Number(t.amount) : -Number(t.amount)), 0);
     const mainBaseline = mainNow - mainNet;
     const savingsBaseline = savingsNow - savingsNet;
-    return Array.from({ length: 6 }, (_, i) => {
-      const offset = i - 5;
+    return Array.from({ length: wealthRange }, (_, i) => {
+      const offset = i - (wealthRange - 1);
       const { start, end } = getMonthBounds(offset, payday);
       const label = shortNames[start.getMonth()];
       const mainUpTo = mainTxns.filter((t) => new Date(t.date) <= end).reduce((s, t) => s + (t.type === "income" ? Number(t.amount) : -Number(t.amount)), 0);
@@ -1144,7 +1162,7 @@ const [openVersions, setOpenVersions] = useState({
       const savings = Math.max(savingsBaseline + savingsUpTo, 0);
       return { label, main, savings, combined: main + savings };
     });
-  }, [transactions, mainAccount.balance, savingsAccount.balance, payday]);
+  }, [transactions, mainAccount.balance, savingsAccount.balance, payday, wealthRange]);
   const freeOnSavings = Math.max(Number(savingsAccount.balance || 0) - totalAllocated, 0);
 
   const percentages = useMemo(() => {
@@ -2631,26 +2649,27 @@ function toggleVersion(version) {
             <div style={{ ...s.card, padding: 18 }}>
               <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", flexWrap: "wrap", gap: 12, marginBottom: 14 }}>
                 <div>
-                  <div style={{ fontWeight: 800, fontSize: 22 }}>{monthRange}-Monats-Verlauf</div>
+                  <div style={{ fontWeight: 800, fontSize: 22 }}>{trendDaily ? "1-Monats-Verlauf (täglich)" : `${monthRange}-Monats-Verlauf`}</div>
                   <div style={{ color: s.textMuted, fontSize: 14, marginTop: 4 }}>Einnahmen, Ausgaben und Sparquote im Vergleich</div>
                 </div>
                 <div style={{ display: "flex", gap: 6, background: s.surfaceAlt, borderRadius: 12, padding: 4, border: `1px solid ${s.border}` }}>
+                  <button onClick={() => setTrendDaily(true)} style={{ ...s.tabButton, height: 34, padding: "0 12px", fontSize: 13, borderRadius: 9, background: trendDaily ? (darkMode ? "rgba(255,255,255,0.12)" : "white") : "transparent", color: trendDaily ? s.text : s.textMuted, fontWeight: trendDaily ? 700 : 500, boxShadow: trendDaily ? "0 1px 4px rgba(0,0,0,0.1)" : "none" }}>1M</button>
                   {[3, 6, 9, 12].map((m) => (
-                    <button key={m} onClick={() => setMonthRange(m)} style={{ ...s.tabButton, height: 34, padding: "0 12px", fontSize: 13, borderRadius: 9, background: monthRange === m ? (darkMode ? "rgba(255,255,255,0.12)" : "white") : "transparent", color: monthRange === m ? s.text : s.textMuted, fontWeight: monthRange === m ? 700 : 500, boxShadow: monthRange === m ? "0 1px 4px rgba(0,0,0,0.1)" : "none" }}>{m}M</button>
+                    <button key={m} onClick={() => { setTrendDaily(false); setMonthRange(m); }} style={{ ...s.tabButton, height: 34, padding: "0 12px", fontSize: 13, borderRadius: 9, background: !trendDaily && monthRange === m ? (darkMode ? "rgba(255,255,255,0.12)" : "white") : "transparent", color: !trendDaily && monthRange === m ? s.text : s.textMuted, fontWeight: !trendDaily && monthRange === m ? 700 : 500, boxShadow: !trendDaily && monthRange === m ? "0 1px 4px rgba(0,0,0,0.1)" : "none" }}>{m}M</button>
                   ))}
                 </div>
               </div>
               <div style={{ width: "100%", height: 300 }}>
                 <ResponsiveContainer width="100%" height="100%">
-                  <LineChart data={multiMonthData} margin={{ top: 5, right: 10, left: 0, bottom: 5 }}>
+                  <LineChart data={trendDaily ? dailyTrendData : multiMonthData} margin={{ top: 5, right: 10, left: 0, bottom: 5 }}>
                     <CartesianGrid strokeDasharray="3 3" stroke={darkMode ? "rgba(255,255,255,0.08)" : "rgba(0,0,0,0.06)"} />
                     <XAxis dataKey="label" tick={{ fontSize: 12, fill: darkMode ? "#a1a1aa" : "#71717a" }} />
                     <YAxis tick={{ fontSize: 12, fill: darkMode ? "#a1a1aa" : "#71717a" }} tickFormatter={(v) => `${currency}${v}`} width={55} />
                     <Tooltip formatter={(value, name) => [money(value, currency), { income: "Einnahmen", expenses: "Ausgaben", savings: "Sparen" }[name] || name]} labelStyle={{ color: darkMode ? "#f4f4f5" : "#18181b" }} contentStyle={{ background: darkMode ? "#27272a" : "white", border: `1px solid ${darkMode ? "#3f3f46" : "#e4e4e7"}`, borderRadius: 10 }} />
                     <Legend formatter={(value) => ({ income: "Einnahmen", expenses: "Ausgaben", savings: "Sparen" }[value] || value)} />
-                    <Line type="monotone" dataKey="income" stroke="#22c55e" strokeWidth={2.5} dot={{ r: 4 }} activeDot={{ r: 6 }} />
-                    <Line type="monotone" dataKey="expenses" stroke="#ef4444" strokeWidth={2.5} dot={{ r: 4 }} activeDot={{ r: 6 }} />
-                    <Line type="monotone" dataKey="savings" stroke="#0ea5e9" strokeWidth={2.5} dot={{ r: 4 }} activeDot={{ r: 6 }} />
+                    <Line type="monotone" dataKey="income" stroke="#22c55e" strokeWidth={2.5} dot={trendDaily ? false : { r: 4 }} activeDot={{ r: 6 }} />
+                    <Line type="monotone" dataKey="expenses" stroke="#ef4444" strokeWidth={2.5} dot={trendDaily ? false : { r: 4 }} activeDot={{ r: 6 }} />
+                    <Line type="monotone" dataKey="savings" stroke="#0ea5e9" strokeWidth={2.5} dot={trendDaily ? false : { r: 4 }} activeDot={{ r: 6 }} />
                   </LineChart>
                 </ResponsiveContainer>
               </div>
@@ -2664,10 +2683,17 @@ function toggleVersion(version) {
                     {{ combined: "Gesamt (Haupt- + Sparkonto)", main: "Nur Hauptkonto", savings: "Nur Sparkonto" }[wealthView]}
                   </div>
                 </div>
-                <div style={{ display: "flex", gap: 6, background: s.surfaceAlt, borderRadius: 12, padding: 4, border: `1px solid ${s.border}` }}>
-                  {[["combined","Gesamt"],["main","Hauptkonto"],["savings","Sparkonto"]].map(([val, label]) => (
-                    <button key={val} onClick={() => setWealthView(val)} style={{ ...s.tabButton, height: 34, padding: "0 12px", fontSize: 13, borderRadius: 9, background: wealthView === val ? (darkMode ? "rgba(255,255,255,0.12)" : "white") : "transparent", color: wealthView === val ? s.text : s.textMuted, fontWeight: wealthView === val ? 700 : 500, boxShadow: wealthView === val ? "0 1px 4px rgba(0,0,0,0.1)" : "none" }}>{label}</button>
-                  ))}
+                <div style={{ display: "flex", flexDirection: "column", gap: 6, alignItems: "flex-end" }}>
+                  <div style={{ display: "flex", gap: 6, background: s.surfaceAlt, borderRadius: 12, padding: 4, border: `1px solid ${s.border}` }}>
+                    {[["combined","Gesamt"],["main","Hauptkonto"],["savings","Sparkonto"]].map(([val, label]) => (
+                      <button key={val} onClick={() => setWealthView(val)} style={{ ...s.tabButton, height: 34, padding: "0 12px", fontSize: 13, borderRadius: 9, background: wealthView === val ? (darkMode ? "rgba(255,255,255,0.12)" : "white") : "transparent", color: wealthView === val ? s.text : s.textMuted, fontWeight: wealthView === val ? 700 : 500, boxShadow: wealthView === val ? "0 1px 4px rgba(0,0,0,0.1)" : "none" }}>{label}</button>
+                    ))}
+                  </div>
+                  <div style={{ display: "flex", gap: 6, background: s.surfaceAlt, borderRadius: 12, padding: 4, border: `1px solid ${s.border}` }}>
+                    {[1, 3, 6, 12].map((m) => (
+                      <button key={m} onClick={() => setWealthRange(m)} style={{ ...s.tabButton, height: 30, padding: "0 10px", fontSize: 12, borderRadius: 8, background: wealthRange === m ? (darkMode ? "rgba(255,255,255,0.12)" : "white") : "transparent", color: wealthRange === m ? s.text : s.textMuted, fontWeight: wealthRange === m ? 700 : 500, boxShadow: wealthRange === m ? "0 1px 4px rgba(0,0,0,0.1)" : "none" }}>{m}M</button>
+                    ))}
+                  </div>
                 </div>
               </div>
               <div style={{ width: "100%", height: 280 }}>
