@@ -976,8 +976,9 @@ const [openVersions, setOpenVersions] = useState({
     // Immer mit dem echten aktuellen Monat arbeiten – völlig unabhängig von der Monats-Navigation
     const realMonthDate = new Date(now.getFullYear(), now.getMonth(), 1);
 
+    // Alle aktiven Items für diesen Monat (ohne lastAppliedMonth-Filter — transactionExists ist der echte Guard)
     const recurringToApply = recurring.filter((r) => {
-      if (!r.active || r.lastAppliedMonth === realMonthKey) return false;
+      if (!r.active) return false;
       if (r.frequency === "yearly") return (r.monthOfYear || 1) === now.getMonth() + 1;
       return true;
     });
@@ -987,11 +988,10 @@ const [openVersions, setOpenVersions] = useState({
     const updatedItems = new Map();
     for (const r of recurringToApply) {
       const autoDate = getRecurringDateForMonth(realMonthDate, r.dayOfMonth);
-      if (autoDate > today) continue;
+      if (autoDate > today) continue; // Tag noch nicht erreicht
       const transactionExists = transactions.some((t) => t.auto && t.note === r.title && t.date === autoDate && t.amount === Number(r.amount) && t.category === r.category);
-      if (!transactionExists) {
-        newTransactions.push({ id: Date.now() + Math.random(), type: r.type, category: r.category, amount: Number(r.amount), note: r.title, date: autoDate, bucket: r.bucket, affectsAccount: true, auto: true });
-      }
+      if (transactionExists) continue; // bereits gebucht — kein Duplikat
+      newTransactions.push({ id: Date.now() + Math.random(), type: r.type, category: r.category, amount: Number(r.amount), note: r.title, date: autoDate, bucket: r.bucket, affectsAccount: true, auto: true });
       updatedItems.set(r.id, { ...r, lastAppliedMonth: realMonthKey });
     }
 
