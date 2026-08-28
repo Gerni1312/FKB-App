@@ -23,6 +23,7 @@ import {
   Calendar,
   Activity,
   PiggyBank,
+  Pencil,
 } from "lucide-react";
 import {
   PieChart,
@@ -862,11 +863,16 @@ function App() {
   const [authUsername, setAuthUsername] = useState("");
   const s = styles(darkMode, mobileOnly);
 
+  const [customCategories, setCustomCategories] = useState([]);
+  const [newCategoryInput, setNewCategoryInput] = useState("");
+  const [editBudget, setEditBudget] = useState(null);
   const [newTransaction, setNewTransaction] = useState({ type: "expense", category: "Essen", amount: "", note: "", date: new Date().toISOString().slice(0, 10), bucket: "flex", targetAccount: "main" });
   const [newBudget, setNewBudget] = useState({ name: "", category: "Freizeit", limit: "", resetMode: "monthly" });
   const [newRecurring, setNewRecurring] = useState({ title: "", amount: "", category: "", bucket: "fixed", type: "expense", dayOfMonth: "1", frequency: "monthly", monthOfYear: 1, note: "" });
   const [newGoal, setNewGoal] = useState({ name: "", target: "" });
   const [savingsTransfer, setSavingsTransfer] = useState({ type: "deposit", amount: "", note: "" });
+
+  const allCategories = useMemo(() => [...new Set([...categories, ...customCategories])].sort(), [customCategories]);
 
   const selectedMonthDate = useMemo(() => getShiftedMonthDate(monthOffset), [monthOffset]);
   const selectedMonthKey = useMemo(() => getMonthKey(selectedMonthDate), [selectedMonthDate]);
@@ -917,6 +923,7 @@ const [openVersions, setOpenVersions] = useState({
     if (parsed.recurring) setRecurring(parsed.recurring);
     if (parsed.goals) setGoals(parsed.goals);
     if (parsed.debts) setDebts(parsed.debts);
+    if (Array.isArray(parsed.customCategories)) setCustomCategories(parsed.customCategories);
     if (parsed.mainAccount) setMainAccount(parsed.mainAccount);
     if (parsed.savingsAccount) setSavingsAccount(parsed.savingsAccount);
     if (parsed.settings?.currency) setCurrency(parsed.settings.currency);
@@ -962,11 +969,12 @@ const [openVersions, setOpenVersions] = useState({
     if (skipNextWrite.current) { skipNextWrite.current = false; return; }
     const data = {
       transactions, budgets, recurring, goals, debts, mainAccount, savingsAccount,
+      customCategories,
       settings: { currency, weeklyMode, monthOffset, payday, darkMode, username },
     };
     localStorage.setItem(STORAGE_KEY, JSON.stringify(data));
     setDoc(doc(db, "users", user.uid), data).catch(console.error);
-  }, [user, dataLoaded, transactions, budgets, recurring, goals, debts, mainAccount, savingsAccount, currency, weeklyMode, monthOffset, payday, darkMode, username]);
+  }, [user, dataLoaded, transactions, budgets, recurring, goals, debts, mainAccount, savingsAccount, customCategories, currency, weeklyMode, monthOffset, payday, darkMode, username]);
 
   useEffect(() => {
     if (!dataLoaded) return;
@@ -1245,6 +1253,25 @@ const [openVersions, setOpenVersions] = useState({
 
   function deleteBudget(id) {
     setBudgets((prev) => prev.filter((b) => b.id !== id));
+  }
+
+  function saveEditBudget() {
+    if (!editBudget) return;
+    const limit = Number(editBudget.limit);
+    if (!editBudget.name || !limit || limit <= 0) return;
+    setBudgets((prev) => prev.map((b) => b.id === editBudget.id ? { ...b, name: editBudget.name, category: editBudget.category, limit, resetMode: editBudget.resetMode } : b));
+    setEditBudget(null);
+  }
+
+  function addCustomCategory() {
+    const val = newCategoryInput.trim();
+    if (!val || allCategories.some((c) => c.toLowerCase() === val.toLowerCase())) return;
+    setCustomCategories((prev) => [...prev, val]);
+    setNewCategoryInput("");
+  }
+
+  function deleteCustomCategory(cat) {
+    setCustomCategories((prev) => prev.filter((c) => c !== cat));
   }
 
   function addRecurring() {
@@ -1904,7 +1931,7 @@ function toggleVersion(version) {
                   </select>
                 )}
                 <select style={{ ...s.input, gridColumn: mobileOnly ? "1" : "span 2" }} value={newTransaction.category} onChange={(e) => setNewTransaction((p) => ({ ...p, category: e.target.value }))}>
-                  {(newTransaction.type === "income" ? incomeCategories : categories).map((cat) => (
+                  {(newTransaction.type === "income" ? incomeCategories : allCategories).map((cat) => (
                     <option key={cat} value={cat}>{cat}</option>
                   ))}
                 </select>
@@ -1994,7 +2021,7 @@ function toggleVersion(version) {
                                     </select>
                                   )}
                                   <select style={s.input} value={editTransaction.category} onChange={(e) => setEditTransaction((p) => ({ ...p, category: e.target.value }))}>
-                                    {(editTransaction.type === "income" ? incomeCategories : categories).map((cat) => <option key={cat} value={cat}>{cat}</option>)}
+                                    {(editTransaction.type === "income" ? incomeCategories : allCategories).map((cat) => <option key={cat} value={cat}>{cat}</option>)}
                                   </select>
                                   <input style={s.input} type="number" placeholder="Betrag" value={editTransaction.amount} onChange={(e) => setEditTransaction((p) => ({ ...p, amount: e.target.value }))} />
                                   <input style={s.input} type="date" value={editTransaction.date} onChange={(e) => setEditTransaction((p) => ({ ...p, date: e.target.value }))} />
@@ -2044,7 +2071,7 @@ function toggleVersion(version) {
               <SectionTitle title="Budget hinzufügen" description="Lege Limits pro Kategorie fest" />
               <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(180px,1fr))", gap: 12 }}>
                 <input style={s.input} placeholder="Name (z. B. Fussball)" value={newBudget.name} onChange={(e) => setNewBudget((p) => ({ ...p, name: e.target.value }))} />
-                <select style={s.input} value={newBudget.category} onChange={(e) => setNewBudget((p) => ({ ...p, category: e.target.value }))}>{categories.map((c) => <option key={c} value={c}>{c}</option>)}</select>
+                <select style={s.input} value={newBudget.category} onChange={(e) => setNewBudget((p) => ({ ...p, category: e.target.value }))}>{allCategories.map((c) => <option key={c} value={c}>{c}</option>)}</select>
                 <input style={s.input} type="number" placeholder="Limit" value={newBudget.limit} onChange={(e) => setNewBudget((p) => ({ ...p, limit: e.target.value }))} />
                 <select style={s.input} value={newBudget.resetMode} onChange={(e) => setNewBudget((p) => ({ ...p, resetMode: e.target.value }))}>
                   <option value="monthly">Monatlich</option>
@@ -2067,7 +2094,7 @@ function toggleVersion(version) {
                     }
                 >
                     <option value="">Kategorie wählen</option>
-                    {categories.map((cat) => (
+                    {allCategories.map((cat) => (
                         <option key={cat} value={cat}>
                             {cat}
                         </option>
@@ -2202,27 +2229,47 @@ function toggleVersion(version) {
               {budgetsWithSpent.filter((b) => b.name.toLowerCase() !== "sparen").length === 0 && <EmptyState icon="🎯" text="Noch keine Budgets" sub="Erstelle oben dein erstes Budget." />}
               {budgetsWithSpent.filter((b) => b.name.toLowerCase() !== "sparen").map((budget) => (
                 <div key={budget.id} style={{ ...s.card, padding: 18 }}>
-                  <div style={{ display: "flex", justifyContent: "space-between", gap: 10, alignItems: "start" }}>
-                    <div>
-                      <div style={{ display: "flex", alignItems: "center", gap: 8 }}><div style={{ fontWeight: 800, fontSize: 20 }}>{budget.name}</div>{(budget.category || budget.name) && <span style={{ fontSize: 11, background: darkMode ? "rgba(99,102,241,0.15)" : "#ede9fe", color: darkMode ? "#a5b4fc" : "#6d28d9", borderRadius: 6, padding: "2px 7px", fontWeight: 600 }}>{budget.category || budget.name}</span>}</div>
-                      <div style={{ color: "#71717a", marginTop: 4, fontSize: 14 }}>Noch verfügbar: {money(budget.remaining, currency)} {budget.resetMode === "manual" ? "· manuell" : "· monatlich"}</div>
+                  {editBudget?.id === budget.id ? (
+                    <div style={{ display: "grid", gap: 10 }}>
+                      <div style={{ fontWeight: 700, fontSize: 14, color: s.textMuted, marginBottom: 2 }}>Budget bearbeiten</div>
+                      <input style={s.input} placeholder="Name" value={editBudget.name} onChange={(e) => setEditBudget((p) => ({ ...p, name: e.target.value }))} />
+                      <select style={s.input} value={editBudget.category} onChange={(e) => setEditBudget((p) => ({ ...p, category: e.target.value }))}>{allCategories.map((c) => <option key={c} value={c}>{c}</option>)}</select>
+                      <input style={s.input} type="number" placeholder="Limit" value={editBudget.limit} onChange={(e) => setEditBudget((p) => ({ ...p, limit: e.target.value }))} />
+                      <select style={s.input} value={editBudget.resetMode} onChange={(e) => setEditBudget((p) => ({ ...p, resetMode: e.target.value }))}>
+                        <option value="monthly">Monatlich</option>
+                        <option value="manual">Manuell</option>
+                      </select>
+                      <div style={{ display: "flex", gap: 8 }}>
+                        <button style={{ ...s.button, flex: 1, justifyContent: "center" }} onClick={saveEditBudget}>Speichern</button>
+                        <button style={{ ...s.buttonSecondary, flex: 1, justifyContent: "center" }} onClick={() => setEditBudget(null)}>Abbrechen</button>
+                      </div>
                     </div>
-                    <div style={{ display: "flex", gap: 8 }}>
-                      <span style={{ ...s.badge, color: budget.status.color, borderColor: budget.status.border }}>{budget.status.label}</span>
-                      <button style={{ ...s.buttonSecondary, width: 44, padding: 0 }} onClick={() => deleteBudget(budget.id)}><Trash2 size={16} /></button>
-                    </div>
-                  </div>
-                  <ProgressBar value={budget.progress} color={budget.status.color} dark={darkMode} />
-                  <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(110px,1fr))", gap: 10, marginTop: 14 }}>
-                    <div style={s.softCard}><div style={{ color: "#71717a", fontSize: 13 }}>Limit</div><div style={{ fontWeight: 800, marginTop: 5 }}>{money(budget.limit, currency)}</div></div>
-                    <div style={s.softCard}><div style={{ color: "#71717a", fontSize: 13 }}>Ausgegeben</div><div style={{ fontWeight: 800, marginTop: 5 }}>{money(budget.spent, currency)}</div></div>
-                    <div style={s.softCard}><div style={{ color: budget.remaining < 0 ? "#dc2626" : "#16a34a", fontSize: 13 }}>Rest</div><div style={{ fontWeight: 800, marginTop: 5 }}>{money(budget.remaining, currency)}</div></div>
-                  </div>
-                  {budget.progress >= 75 && (
-                    <div style={{ ...s.softCard, marginTop: 12, background: budget.status.bg, borderColor: budget.status.border, color: budget.status.color, display: "flex", gap: 8, alignItems: "start" }}>
-                      <AlertTriangle size={16} style={{ marginTop: 2 }} />
-                      <div style={{ fontSize: 14 }}>Dieses Budget ist fast leer. Schau besser drauf, bevor es kippt.</div>
-                    </div>
+                  ) : (
+                    <>
+                      <div style={{ display: "flex", justifyContent: "space-between", gap: 10, alignItems: "start" }}>
+                        <div>
+                          <div style={{ display: "flex", alignItems: "center", gap: 8 }}><div style={{ fontWeight: 800, fontSize: 20 }}>{budget.name}</div>{(budget.category || budget.name) && <span style={{ fontSize: 11, background: darkMode ? "rgba(99,102,241,0.15)" : "#ede9fe", color: darkMode ? "#a5b4fc" : "#6d28d9", borderRadius: 6, padding: "2px 7px", fontWeight: 600 }}>{budget.category || budget.name}</span>}</div>
+                          <div style={{ color: "#71717a", marginTop: 4, fontSize: 14 }}>Noch verfügbar: {money(budget.remaining, currency)} {budget.resetMode === "manual" ? "· manuell" : "· monatlich"}</div>
+                        </div>
+                        <div style={{ display: "flex", gap: 8 }}>
+                          <span style={{ ...s.badge, color: budget.status.color, borderColor: budget.status.border }}>{budget.status.label}</span>
+                          <button style={{ ...s.buttonSecondary, width: 44, padding: 0 }} onClick={() => setEditBudget({ ...budget, limit: String(budget.limit) })}><Pencil size={16} /></button>
+                          <button style={{ ...s.buttonSecondary, width: 44, padding: 0 }} onClick={() => deleteBudget(budget.id)}><Trash2 size={16} /></button>
+                        </div>
+                      </div>
+                      <ProgressBar value={budget.progress} color={budget.status.color} dark={darkMode} />
+                      <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(110px,1fr))", gap: 10, marginTop: 14 }}>
+                        <div style={s.softCard}><div style={{ color: "#71717a", fontSize: 13 }}>Limit</div><div style={{ fontWeight: 800, marginTop: 5 }}>{money(budget.limit, currency)}</div></div>
+                        <div style={s.softCard}><div style={{ color: "#71717a", fontSize: 13 }}>Ausgegeben</div><div style={{ fontWeight: 800, marginTop: 5 }}>{money(budget.spent, currency)}</div></div>
+                        <div style={s.softCard}><div style={{ color: budget.remaining < 0 ? "#dc2626" : "#16a34a", fontSize: 13 }}>Rest</div><div style={{ fontWeight: 800, marginTop: 5 }}>{money(budget.remaining, currency)}</div></div>
+                      </div>
+                      {budget.progress >= 75 && (
+                        <div style={{ ...s.softCard, marginTop: 12, background: budget.status.bg, borderColor: budget.status.border, color: budget.status.color, display: "flex", gap: 8, alignItems: "start" }}>
+                          <AlertTriangle size={16} style={{ marginTop: 2 }} />
+                          <div style={{ fontSize: 14 }}>Dieses Budget ist fast leer. Schau besser drauf, bevor es kippt.</div>
+                        </div>
+                      )}
+                    </>
                   )}
                 </div>
               ))}
@@ -2681,6 +2728,26 @@ function toggleVersion(version) {
                 </button>
               </div>
             </div>
+          </div>
+
+          <div style={s.softCard}>
+            <div style={{ fontWeight: 800, color: s.text }}>Eigene Kategorien</div>
+            <div style={{ fontSize: 14, color: s.textMuted, marginTop: 4, marginBottom: 14 }}>Erstelle eigene Kategorien für Buchungen und Budgets.</div>
+            <div style={{ display: "flex", gap: 8, marginBottom: 12 }}>
+              <input style={{ ...s.input, flex: 1 }} placeholder="Neue Kategorie (z.B. Thun Reise)" value={newCategoryInput} onChange={(e) => setNewCategoryInput(e.target.value)} onKeyDown={(e) => e.key === "Enter" && addCustomCategory()} />
+              <button style={s.button} onClick={addCustomCategory}>Hinzufügen</button>
+            </div>
+            {customCategories.length > 0 && (
+              <div style={{ display: "flex", flexWrap: "wrap", gap: 8 }}>
+                {customCategories.map((cat) => (
+                  <div key={cat} style={{ display: "flex", alignItems: "center", gap: 6, background: darkMode ? "rgba(99,102,241,0.15)" : "#ede9fe", color: darkMode ? "#a5b4fc" : "#6d28d9", borderRadius: 20, padding: "4px 10px 4px 12px", fontSize: 13, fontWeight: 600 }}>
+                    {cat}
+                    <button onClick={() => deleteCustomCategory(cat)} style={{ background: "none", border: "none", cursor: "pointer", color: "inherit", padding: 0, lineHeight: 1, marginLeft: 2, opacity: 0.7 }}>✕</button>
+                  </div>
+                ))}
+              </div>
+            )}
+            {customCategories.length === 0 && <div style={{ fontSize: 13, color: s.textMuted }}>Noch keine eigenen Kategorien.</div>}
           </div>
 
           <div style={s.softCard}>
