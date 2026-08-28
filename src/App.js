@@ -921,7 +921,7 @@ const [openVersions, setOpenVersions] = useState({
     if (parsed.savingsAccount) setSavingsAccount(parsed.savingsAccount);
     if (parsed.settings?.currency) setCurrency(parsed.settings.currency);
     if (typeof parsed.settings?.weeklyMode === "boolean") setWeeklyMode(parsed.settings.weeklyMode);
-    if (typeof parsed.settings?.monthOffset === "number") setMonthOffset(parsed.settings.monthOffset);
+    // monthOffset ist reiner UI-State und wird nicht aus Firebase geladen
     if (typeof parsed.settings?.payday === "number") setPayday(parsed.settings.payday);
     if (typeof parsed.settings?.darkMode === "boolean") setDarkMode(parsed.settings.darkMode);
     if (parsed.settings?.username) setUsername(parsed.settings.username);
@@ -970,14 +970,15 @@ const [openVersions, setOpenVersions] = useState({
 
   useEffect(() => {
     if (!dataLoaded) return;
-    const today = new Date().toISOString().slice(0, 10);
-    const realMonthKey = getMonthKey(new Date());
-    // Nur für den echten aktuellen Monat buchen, nie bei Monats-Navigation
-    if (selectedMonthKey !== realMonthKey) return;
+    const now = new Date();
+    const today = now.toISOString().slice(0, 10);
+    const realMonthKey = getMonthKey(now);
+    // Immer mit dem echten aktuellen Monat arbeiten – völlig unabhängig von der Monats-Navigation
+    const realMonthDate = new Date(now.getFullYear(), now.getMonth(), 1);
 
     const recurringToApply = recurring.filter((r) => {
-      if (!r.active || r.lastAppliedMonth === selectedMonthKey) return false;
-      if (r.frequency === "yearly") return (r.monthOfYear || 1) === selectedMonthDate.getMonth() + 1;
+      if (!r.active || r.lastAppliedMonth === realMonthKey) return false;
+      if (r.frequency === "yearly") return (r.monthOfYear || 1) === now.getMonth() + 1;
       return true;
     });
     if (recurringToApply.length === 0) return;
@@ -985,17 +986,15 @@ const [openVersions, setOpenVersions] = useState({
     const newTransactions = [];
     const updatedItems = new Map();
     for (const r of recurringToApply) {
-      const autoDate = getRecurringDateForMonth(selectedMonthDate, r.dayOfMonth);
-      // Nicht buchen wenn der Fälligkeitstag noch nicht erreicht ist
+      const autoDate = getRecurringDateForMonth(realMonthDate, r.dayOfMonth);
       if (autoDate > today) continue;
       const transactionExists = transactions.some((t) => t.auto && t.note === r.title && t.date === autoDate && t.amount === Number(r.amount) && t.category === r.category);
       if (!transactionExists) {
         newTransactions.push({ id: Date.now() + Math.random(), type: r.type, category: r.category, amount: Number(r.amount), note: r.title, date: autoDate, bucket: r.bucket, affectsAccount: true, auto: true });
       }
-      updatedItems.set(r.id, { ...r, lastAppliedMonth: selectedMonthKey });
+      updatedItems.set(r.id, { ...r, lastAppliedMonth: realMonthKey });
     }
 
-    // Nur updaten wenn tatsächlich etwas gebucht wurde — verhindert Re-Render-Loop
     if (updatedItems.size === 0) return;
     setRecurring((prev) => prev.map((r) => updatedItems.has(r.id) ? updatedItems.get(r.id) : r));
     if (newTransactions.length > 0) {
@@ -1003,7 +1002,7 @@ const [openVersions, setOpenVersions] = useState({
       const balanceDelta = newTransactions.reduce((sum, t) => sum + (t.type === "income" ? t.amount : -t.amount), 0);
       if (balanceDelta !== 0) setMainAccount((p) => ({ ...p, balance: p.balance + balanceDelta }));
     }
-  }, [dataLoaded, selectedMonthKey, selectedMonthDate, recurring, transactions]);
+  }, [dataLoaded, recurring, transactions]);
 
   const monthTransactions = useMemo(
     () => transactions.filter((t) => inSelectedMonth(t.date, monthOffset, payday)),
@@ -1516,7 +1515,6 @@ const [openVersions, setOpenVersions] = useState({
         if (parsed.savingsAccount) setSavingsAccount(parsed.savingsAccount);
         if (parsed.settings?.currency) setCurrency(parsed.settings.currency);
         if (typeof parsed.settings?.weeklyMode === "boolean") setWeeklyMode(parsed.settings.weeklyMode);
-        if (typeof parsed.settings?.monthOffset === "number") setMonthOffset(parsed.settings.monthOffset);
         // Direkt in Firestore schreiben damit andere Geräte sofort sync bekommen
         if (user) {
           const data = {
