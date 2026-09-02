@@ -1374,8 +1374,12 @@ const [openVersions, setOpenVersions] = useState({
 
   function addTransaction() {
     const amount = Number(newTransaction.amount);
-    if (!newTransaction.category || !amount || amount <= 0) return;
-    const txn = { id: Date.now(), ...newTransaction, amount, affectsAccount: true };
+    const isSavingsExpense = newTransaction.type === "expense" && newTransaction.sourceAccount === "savings";
+    if (!isSavingsExpense && !newTransaction.category) return;
+    if (!amount || amount <= 0) return;
+    const txn = isSavingsExpense
+      ? { id: Date.now(), type: "expense", amount, note: newTransaction.note, date: newTransaction.date, sourceAccount: "savings", goalId: newTransaction.goalId, affectsAccount: true }
+      : { id: Date.now(), ...newTransaction, amount, affectsAccount: true };
     setTransactions((prev) => [txn, ...prev]);
     if (newTransaction.type === "income") {
       if (newTransaction.targetAccount === "savings") {
@@ -2269,16 +2273,34 @@ function toggleVersion(version) {
                                       <option value="main">→ Hauptkonto</option>
                                       <option value="savings">→ Sparkonto</option>
                                     </select>
-                                  ) : (
+                                  ) : editTransaction.sourceAccount !== "savings" ? (
                                     <select style={s.input} value={editTransaction.bucket} onChange={(e) => setEditTransaction((p) => ({ ...p, bucket: e.target.value }))}>
                                       <option value="fixed">Fixkosten</option>
                                       <option value="flex">Variable Ausgaben</option>
                                       <option value="saving">Sparen</option>
                                     </select>
+                                  ) : null}
+                                  {editTransaction.type === "expense" && (
+                                    <select style={s.input} value={editTransaction.sourceAccount || "main"} onChange={(e) => setEditTransaction((p) => ({ ...p, sourceAccount: e.target.value, goalId: "" }))}>
+                                      <option value="main">Von Hauptkonto</option>
+                                      <option value="savings">Von Sparkonto</option>
+                                    </select>
                                   )}
-                                  <select style={s.input} value={editTransaction.category} onChange={(e) => setEditTransaction((p) => ({ ...p, category: e.target.value }))}>
-                                    {(editTransaction.type === "income" ? incomeCategories : allCategories).map((cat) => <option key={cat} value={cat}>{cat}</option>)}
-                                  </select>
+                                  {editTransaction.type === "expense" && editTransaction.sourceAccount === "savings" ? (
+                                    <select style={s.input} value={editTransaction.goalId || ""} onChange={(e) => setEditTransaction((p) => ({ ...p, goalId: e.target.value }))}>
+                                      <option value="">Nicht zugewiesen</option>
+                                      {goals.map((g) => <option key={g.id} value={g.id}>{g.name} ({money(g.allocated || 0, currency)} verfügbar)</option>)}
+                                    </select>
+                                  ) : (editTransaction.type !== "income") && (
+                                    <select style={s.input} value={editTransaction.category} onChange={(e) => setEditTransaction((p) => ({ ...p, category: e.target.value }))}>
+                                      {allCategories.map((cat) => <option key={cat} value={cat}>{cat}</option>)}
+                                    </select>
+                                  )}
+                                  {editTransaction.type === "income" && (
+                                    <select style={s.input} value={editTransaction.category} onChange={(e) => setEditTransaction((p) => ({ ...p, category: e.target.value }))}>
+                                      {incomeCategories.map((cat) => <option key={cat} value={cat}>{cat}</option>)}
+                                    </select>
+                                  )}
                                   <input style={s.input} type="number" placeholder="Betrag" value={editTransaction.amount} onChange={(e) => setEditTransaction((p) => ({ ...p, amount: e.target.value }))} />
                                   <input style={s.input} type="date" value={editTransaction.date} onChange={(e) => setEditTransaction((p) => ({ ...p, date: e.target.value }))} />
                                   <input style={s.input} placeholder="Notiz" value={editTransaction.note} onChange={(e) => setEditTransaction((p) => ({ ...p, note: e.target.value }))} />
@@ -2295,8 +2317,17 @@ function toggleVersion(version) {
                                 </div>
                                 <div style={{ flex: 1, minWidth: 0 }}>
                                   <div style={{ display: "flex", alignItems: "center", gap: 6, flexWrap: "wrap" }}>
-                                    <span style={{ fontWeight: 600, fontSize: 14, color: s.text }}>{t.category}</span>
-                                    <span style={{ fontSize: 11, padding: "1px 6px", borderRadius: 4, background: darkMode ? "rgba(255,255,255,0.08)" : "#f3f4f6", color: s.textMuted }}>{bucketLabel[t.bucket] || t.bucket}</span>
+                                    {t.sourceAccount === "savings" ? (
+                                      <>
+                                        <span style={{ fontWeight: 600, fontSize: 14, color: s.text }}>{goals.find((g) => String(g.id) === String(t.goalId))?.name || "Sparkonto"}</span>
+                                        <span style={{ fontSize: 11, padding: "1px 6px", borderRadius: 4, background: darkMode ? "rgba(99,102,241,0.15)" : "#ede9fe", color: darkMode ? "#a5b4fc" : "#6d28d9" }}>Von Sparkonto</span>
+                                      </>
+                                    ) : (
+                                      <>
+                                        <span style={{ fontWeight: 600, fontSize: 14, color: s.text }}>{t.category}</span>
+                                        <span style={{ fontSize: 11, padding: "1px 6px", borderRadius: 4, background: darkMode ? "rgba(255,255,255,0.08)" : "#f3f4f6", color: s.textMuted }}>{bucketLabel[t.bucket] || t.bucket}</span>
+                                      </>
+                                    )}
                                     {(t.auto || (t.note && t.note.startsWith("[AUTO]"))) && <span style={{ fontSize: 11, background: darkMode ? "rgba(14,165,233,0.15)" : "#e0f2fe", color: darkMode ? "#7dd3fc" : "#0369a1", borderRadius: 4, padding: "1px 6px", fontWeight: 600 }}>🔁</span>}
                                   </div>
                                   {(t.note && t.note.replace(/^\[AUTO\]\s*/, "")) && <div style={{ fontSize: 12, color: s.textMuted, marginTop: 1, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{t.note.replace(/^\[AUTO\]\s*/, "")}</div>}
