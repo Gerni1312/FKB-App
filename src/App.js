@@ -1552,7 +1552,6 @@ const [openVersions, setOpenVersions] = useState({
   function moveCategoryUp(cat) {
     setCategoryOrder((prev) => {
       const all = [...new Set([...categories, ...customCategories])];
-      const base = all.map((c) => (prev.includes(c) ? c : c));
       const ordered = [...all].sort((a, b) => {
         const ai = prev.indexOf(a); const bi = prev.indexOf(b);
         if (ai === -1 && bi === -1) return a.localeCompare(b);
