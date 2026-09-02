@@ -1,6 +1,6 @@
 import React, { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { auth, db } from "./firebase";
-import { createUserWithEmailAndPassword, signInWithEmailAndPassword, signOut, onAuthStateChanged } from "firebase/auth";
+import { createUserWithEmailAndPassword, signInWithEmailAndPassword, signOut, onAuthStateChanged, reauthenticateWithCredential, EmailAuthProvider } from "firebase/auth";
 import { doc, setDoc, onSnapshot } from "firebase/firestore";
 import {
   Plus,
@@ -835,6 +835,10 @@ function App() {
   const [authError, setAuthError] = useState("");
   const [authBusy, setAuthBusy] = useState(false);
   const [dataLoaded, setDataLoaded] = useState(false);
+  const [resetModalOpen, setResetModalOpen] = useState(false);
+  const [resetPassword, setResetPassword] = useState("");
+  const [resetError, setResetError] = useState("");
+  const [resetBusy, setResetBusy] = useState(false);
 
   const [transactions, setTransactions] = useState(seedData.transactions);
   const [budgets, setBudgets] = useState(seedData.budgets);
@@ -1342,6 +1346,33 @@ const [openVersions, setOpenVersions] = useState({
 
   function deleteCustomCategory(cat) {
     setCustomCategories((prev) => prev.filter((c) => c !== cat));
+  }
+
+  async function resetAllData() {
+    if (!user) return;
+    setResetBusy(true);
+    setResetError("");
+    try {
+      const credential = EmailAuthProvider.credential(user.email, resetPassword);
+      await reauthenticateWithCredential(user, credential);
+      const empty = { ...seedData, settings: { ...seedData.settings, username, currency, darkMode, weeklyMode, payday } };
+      localStorage.removeItem(STORAGE_KEY);
+      await setDoc(doc(db, "users", user.uid), empty);
+      setTransactions(seedData.transactions);
+      setBudgets(seedData.budgets);
+      setRecurring(seedData.recurring);
+      setGoals(seedData.goals);
+      setDebts([]);
+      setMainAccount(seedData.mainAccount);
+      setSavingsAccount(seedData.savingsAccount);
+      setCustomCategories([]);
+      setResetModalOpen(false);
+      setResetPassword("");
+    } catch {
+      setResetError("Falsches Passwort. Bitte nochmals versuchen.");
+    } finally {
+      setResetBusy(false);
+    }
   }
 
   function addRecurring() {
@@ -2902,6 +2933,14 @@ function toggleVersion(version) {
             </div>
           </div>
 
+          <div style={{ ...s.softCard, border: "1px solid #dc2626" }}>
+            <div style={{ fontWeight: 800, color: "#dc2626" }}>Gefahrenzone</div>
+            <div style={{ fontSize: 14, color: s.textMuted, marginTop: 4, marginBottom: 14 }}>Alle Daten unwiderruflich löschen — Buchungen, Budgets, Sparziele, Schulden und Kontostand werden auf null zurückgesetzt. Einstellungen bleiben erhalten.</div>
+            <button style={{ ...s.button, background: "#dc2626", width: "100%", justifyContent: "center" }} onClick={() => { setResetModalOpen(true); setResetPassword(""); setResetError(""); }}>
+              <Trash2 size={16} /> Alle Daten löschen
+            </button>
+          </div>
+
           {/* Version History — aufklappbarer Block am Ende */}
           <div style={{ ...s.softCard, overflow: "hidden" }}>
             <button style={{ width: "100%", background: "none", border: "none", cursor: "pointer", display: "flex", justifyContent: "space-between", alignItems: "center", padding: 0 }} onClick={() => setOpenVersions((v) => ({ ...v, __block: !v.__block }))}>
@@ -2975,6 +3014,31 @@ function toggleVersion(version) {
                 </button>
               );
             })}
+          </div>
+        </div>
+      )}
+
+      {resetModalOpen && (
+        <div style={{ position: "fixed", inset: 0, background: "rgba(0,0,0,0.6)", zIndex: 9999, display: "flex", alignItems: "center", justifyContent: "center", padding: 16 }}>
+          <div style={{ ...s.card, padding: 24, maxWidth: 400, width: "100%" }}>
+            <div style={{ fontWeight: 800, fontSize: 18, color: "#dc2626", marginBottom: 6 }}>Alle Daten löschen</div>
+            <div style={{ fontSize: 14, color: s.textMuted, marginBottom: 20 }}>Diese Aktion ist unwiderruflich. Buchungen, Budgets, Sparziele, Schulden und Kontostand werden dauerhaft gelöscht. Gib dein Passwort ein um fortzufahren.</div>
+            <input
+              style={{ ...s.input, marginBottom: 10 }}
+              type="password"
+              placeholder="Passwort"
+              value={resetPassword}
+              onChange={(e) => setResetPassword(e.target.value)}
+              onKeyDown={(e) => e.key === "Enter" && resetAllData()}
+              autoFocus
+            />
+            {resetError && <div style={{ fontSize: 13, color: "#dc2626", marginBottom: 10 }}>{resetError}</div>}
+            <div style={{ display: "flex", gap: 8 }}>
+              <button style={{ ...s.buttonSecondary, flex: 1, justifyContent: "center" }} onClick={() => { setResetModalOpen(false); setResetPassword(""); setResetError(""); }}>Abbrechen</button>
+              <button style={{ ...s.button, flex: 1, justifyContent: "center", background: "#dc2626", opacity: resetBusy ? 0.6 : 1 }} onClick={resetAllData} disabled={resetBusy}>
+                {resetBusy ? "Wird gelöscht…" : "Löschen"}
+              </button>
+            </div>
           </div>
         </div>
       )}
