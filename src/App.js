@@ -1979,13 +1979,13 @@ function toggleVersion(version) {
                     <option value="main">→ Hauptkonto</option>
                     <option value="savings">→ Sparkonto</option>
                   </select>
-                ) : (
+                ) : newTransaction.sourceAccount !== "savings" ? (
                   <select style={s.input} value={newTransaction.bucket} onChange={(e) => setNewTransaction((p) => ({ ...p, bucket: e.target.value }))}>
                     <option value="fixed">Fixkosten</option>
                     <option value="flex">Variable Ausgaben</option>
                     <option value="saving">Sparen</option>
                   </select>
-                )}
+                ) : null}
                 {newTransaction.type === "expense" && (
                   <select style={s.input} value={newTransaction.sourceAccount} onChange={(e) => setNewTransaction((p) => ({ ...p, sourceAccount: e.target.value, goalId: "" }))}>
                     <option value="main">Von Hauptkonto</option>
@@ -2000,11 +2000,13 @@ function toggleVersion(version) {
                     </select>
                   </div>
                 )}
-                <select style={{ ...s.input, gridColumn: mobileOnly ? "1" : "span 2" }} value={newTransaction.category} onChange={(e) => setNewTransaction((p) => ({ ...p, category: e.target.value }))}>
-                  {(newTransaction.type === "income" ? incomeCategories : allCategories).map((cat) => (
-                    <option key={cat} value={cat}>{cat}</option>
-                  ))}
-                </select>
+                {(newTransaction.type === "income" || newTransaction.sourceAccount !== "savings") && (
+                  <select style={{ ...s.input, gridColumn: mobileOnly ? "1" : "span 2" }} value={newTransaction.category} onChange={(e) => setNewTransaction((p) => ({ ...p, category: e.target.value }))}>
+                    {(newTransaction.type === "income" ? incomeCategories : allCategories).map((cat) => (
+                      <option key={cat} value={cat}>{cat}</option>
+                    ))}
+                  </select>
+                )}
                 <input style={s.input} type="number" placeholder="Betrag" value={newTransaction.amount} onChange={(e) => setNewTransaction((p) => ({ ...p, amount: e.target.value }))} />
                 <input style={s.input} type="date" value={newTransaction.date} onChange={(e) => setNewTransaction((p) => ({ ...p, date: e.target.value }))} />
                 <input style={{ ...s.input, gridColumn: mobileOnly ? "1" : "span 2" }} placeholder="Notiz (optional)" value={newTransaction.note} onChange={(e) => setNewTransaction((p) => ({ ...p, note: e.target.value }))} />
