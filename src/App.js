@@ -870,7 +870,7 @@ function App() {
   const [customCategories, setCustomCategories] = useState([]);
   const [newCategoryInput, setNewCategoryInput] = useState("");
   const [editBudget, setEditBudget] = useState(null);
-  const [newTransaction, setNewTransaction] = useState({ type: "expense", category: "Essen", amount: "", note: "", date: new Date().toISOString().slice(0, 10), bucket: "flex", targetAccount: "main" });
+  const [newTransaction, setNewTransaction] = useState({ type: "expense", category: "Essen", amount: "", note: "", date: new Date().toISOString().slice(0, 10), bucket: "flex", targetAccount: "main", sourceAccount: "main", goalId: "" });
   const [newBudget, setNewBudget] = useState({ name: "", category: "Freizeit", limit: "", resetMode: "monthly" });
   const [newRecurring, setNewRecurring] = useState({ title: "", amount: "", category: "", bucket: "fixed", type: "expense", dayOfMonth: "1", frequency: "monthly", monthOfYear: 1, note: "" });
   const [newGoal, setNewGoal] = useState({ name: "", target: "" });
@@ -1022,12 +1022,14 @@ const [openVersions, setOpenVersions] = useState({
   );
 
   const totals = useMemo(() => {
-    const income = monthTransactions.filter((t) => t.type === "income").reduce((sum, t) => sum + Number(t.amount), 0);
-    const fixed = monthTransactions.filter((t) => t.type === "expense" && t.bucket === "fixed").reduce((sum, t) => sum + Number(t.amount), 0);
-    const flex = monthTransactions.filter((t) => t.type === "expense" && t.bucket === "flex").reduce((sum, t) => sum + Number(t.amount), 0);
-    const saving = monthTransactions.filter((t) => t.bucket === "saving").reduce((sum, t) => sum + Number(t.amount), 0);
-    const expenses = monthTransactions.filter((t) => t.type === "expense").reduce((sum, t) => sum + Number(t.amount), 0);
-    return { income, fixed, flex, saving, expenses, remaining: income - expenses };
+    const mainTxns = monthTransactions.filter((t) => t.sourceAccount !== "savings");
+    const income = mainTxns.filter((t) => t.type === "income").reduce((sum, t) => sum + Number(t.amount), 0);
+    const fixed = mainTxns.filter((t) => t.type === "expense" && t.bucket === "fixed").reduce((sum, t) => sum + Number(t.amount), 0);
+    const flex = mainTxns.filter((t) => t.type === "expense" && t.bucket === "flex").reduce((sum, t) => sum + Number(t.amount), 0);
+    const saving = mainTxns.filter((t) => t.bucket === "saving").reduce((sum, t) => sum + Number(t.amount), 0);
+    const expenses = mainTxns.filter((t) => t.type === "expense").reduce((sum, t) => sum + Number(t.amount), 0);
+    const savingsExpenses = monthTransactions.filter((t) => t.sourceAccount === "savings" && t.type === "expense").reduce((sum, t) => sum + Number(t.amount), 0);
+    return { income, fixed, flex, saving, expenses, remaining: income - expenses, savingsExpenses };
   }, [monthTransactions]);
 
   const lastMonthTotals = useMemo(() => {
@@ -1224,10 +1226,15 @@ const [openVersions, setOpenVersions] = useState({
       } else {
         setMainAccount((p) => ({ ...p, balance: r2(p.balance + amount) }));
       }
+    } else if (newTransaction.sourceAccount === "savings") {
+      setSavingsAccount((p) => ({ ...p, balance: r2(p.balance - amount) }));
+      if (newTransaction.goalId) {
+        setGoals((prev) => prev.map((g) => g.id === newTransaction.goalId ? { ...g, allocated: r2(Math.max((g.allocated || 0) - amount, 0)) } : g));
+      }
     } else {
       setMainAccount((p) => ({ ...p, balance: r2(p.balance - amount) }));
     }
-    setNewTransaction({ type: "expense", category: "Essen", amount: "", note: "", date: new Date().toISOString().slice(0, 10), bucket: "flex", targetAccount: "main" });
+    setNewTransaction({ type: "expense", category: "Essen", amount: "", note: "", date: new Date().toISOString().slice(0, 10), bucket: "flex", targetAccount: "main", sourceAccount: "main", goalId: "" });
   }
 
   function deleteTransaction(id) {
@@ -1239,6 +1246,11 @@ const [openVersions, setOpenVersions] = useState({
           setSavingsAccount((p) => ({ ...p, balance: r2(p.balance - amount) }));
         } else {
           setMainAccount((p) => ({ ...p, balance: r2(p.balance - amount) }));
+        }
+      } else if (txn.sourceAccount === "savings") {
+        setSavingsAccount((p) => ({ ...p, balance: r2(p.balance + amount) }));
+        if (txn.goalId) {
+          setGoals((prev) => prev.map((g) => g.id === txn.goalId ? { ...g, allocated: r2((g.allocated || 0) + amount) } : g));
         }
       } else {
         setMainAccount((p) => ({ ...p, balance: r2(p.balance + amount) }));
@@ -1267,6 +1279,9 @@ const [openVersions, setOpenVersions] = useState({
         old.targetAccount === "savings"
           ? setSavingsAccount((p) => ({ ...p, balance: r2(p.balance - oldAmt) }))
           : setMainAccount((p) => ({ ...p, balance: r2(p.balance - oldAmt) }));
+      } else if (old.sourceAccount === "savings") {
+        setSavingsAccount((p) => ({ ...p, balance: r2(p.balance + oldAmt) }));
+        if (old.goalId) setGoals((prev) => prev.map((g) => g.id === old.goalId ? { ...g, allocated: r2((g.allocated || 0) + oldAmt) } : g));
       } else {
         setMainAccount((p) => ({ ...p, balance: r2(p.balance + oldAmt) }));
       }
@@ -1274,6 +1289,9 @@ const [openVersions, setOpenVersions] = useState({
         editTransaction.targetAccount === "savings"
           ? setSavingsAccount((p) => ({ ...p, balance: r2(p.balance + newAmount) }))
           : setMainAccount((p) => ({ ...p, balance: r2(p.balance + newAmount) }));
+      } else if (editTransaction.sourceAccount === "savings") {
+        setSavingsAccount((p) => ({ ...p, balance: r2(p.balance - newAmount) }));
+        if (editTransaction.goalId) setGoals((prev) => prev.map((g) => g.id === editTransaction.goalId ? { ...g, allocated: r2(Math.max((g.allocated || 0) - newAmount, 0)) } : g));
       } else {
         setMainAccount((p) => ({ ...p, balance: r2(p.balance - newAmount) }));
       }
@@ -1967,6 +1985,20 @@ function toggleVersion(version) {
                     <option value="flex">Variable Ausgaben</option>
                     <option value="saving">Sparen</option>
                   </select>
+                )}
+                {newTransaction.type === "expense" && (
+                  <select style={s.input} value={newTransaction.sourceAccount} onChange={(e) => setNewTransaction((p) => ({ ...p, sourceAccount: e.target.value, goalId: "" }))}>
+                    <option value="main">Von Hauptkonto</option>
+                    <option value="savings">Von Sparkonto</option>
+                  </select>
+                )}
+                {newTransaction.type === "expense" && newTransaction.sourceAccount === "savings" && (
+                  <div style={{ display: "grid", gap: 6 }}>
+                    <select style={s.input} value={newTransaction.goalId} onChange={(e) => setNewTransaction((p) => ({ ...p, goalId: e.target.value }))}>
+                      <option value="">Nicht zugewiesen ({money(freeOnSavings, currency)} verfügbar)</option>
+                      {goals.map((g) => <option key={g.id} value={g.id}>{g.name} ({money(g.allocated || 0, currency)} verfügbar)</option>)}
+                    </select>
+                  </div>
                 )}
                 <select style={{ ...s.input, gridColumn: mobileOnly ? "1" : "span 2" }} value={newTransaction.category} onChange={(e) => setNewTransaction((p) => ({ ...p, category: e.target.value }))}>
                   {(newTransaction.type === "income" ? incomeCategories : allCategories).map((cat) => (
@@ -2728,6 +2760,30 @@ function toggleVersion(version) {
                 </ResponsiveContainer>
               </div>
             </div>
+
+            {totals.savingsExpenses > 0 && (
+              <div style={{ ...s.card, padding: 18 }}>
+                <SectionTitle title="Sparkonto Ausgaben" description="Ausgaben direkt vom Sparkonto — separat vom Monatsbudget" />
+                <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(160px,1fr))", gap: 12, marginBottom: 16 }}>
+                  <div style={s.softCard}><div style={{ fontSize: 13, color: s.textMuted }}>Total diesen Monat</div><div style={{ fontWeight: 900, fontSize: 22, marginTop: 6, color: "#dc2626" }}>−{money(totals.savingsExpenses, currency)}</div></div>
+                  <div style={s.softCard}><div style={{ fontSize: 13, color: s.textMuted }}>Anzahl Buchungen</div><div style={{ fontWeight: 900, fontSize: 22, marginTop: 6 }}>{monthTransactions.filter((t) => t.sourceAccount === "savings" && t.type === "expense").length}</div></div>
+                </div>
+                <div style={{ display: "grid", gap: 8 }}>
+                  {monthTransactions.filter((t) => t.sourceAccount === "savings" && t.type === "expense").sort((a, b) => new Date(b.date) - new Date(a.date)).map((t) => {
+                    const goal = goals.find((g) => g.id === t.goalId);
+                    return (
+                      <div key={t.id} style={{ ...s.softCard, display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+                        <div>
+                          <div style={{ fontWeight: 700 }}>{t.category}</div>
+                          <div style={{ fontSize: 12, color: s.textMuted, marginTop: 2 }}>{t.note || "—"} · {t.date} {goal ? <span style={{ color: darkMode ? "#a5b4fc" : "#6d28d9" }}>· {goal.name}</span> : null}</div>
+                        </div>
+                        <div style={{ fontWeight: 800, color: "#dc2626" }}>−{money(t.amount, currency)}</div>
+                      </div>
+                    );
+                  })}
+                </div>
+              </div>
+            )}
 
             <div style={{ ...s.card, padding: 18 }}>
               <SectionTitle title="Smarte Hinweise" description="Kleine Analyse, damit du besser sparen kannst" />
