@@ -1386,7 +1386,7 @@ const [openVersions, setOpenVersions] = useState({
     } else if (newTransaction.sourceAccount === "savings") {
       setSavingsAccount((p) => ({ ...p, balance: r2(p.balance - amount) }));
       if (newTransaction.goalId) {
-        setGoals((prev) => prev.map((g) => g.id === newTransaction.goalId ? { ...g, allocated: r2(Math.max((g.allocated || 0) - amount, 0)) } : g));
+        setGoals((prev) => prev.map((g) => String(g.id) === String(newTransaction.goalId) ? { ...g, allocated: r2(Math.max((g.allocated || 0) - amount, 0)) } : g));
       }
     } else {
       setMainAccount((p) => ({ ...p, balance: r2(p.balance - amount) }));
@@ -1407,7 +1407,7 @@ const [openVersions, setOpenVersions] = useState({
       } else if (txn.sourceAccount === "savings") {
         setSavingsAccount((p) => ({ ...p, balance: r2(p.balance + amount) }));
         if (txn.goalId) {
-          setGoals((prev) => prev.map((g) => g.id === txn.goalId ? { ...g, allocated: r2((g.allocated || 0) + amount) } : g));
+          setGoals((prev) => prev.map((g) => String(g.id) === String(txn.goalId) ? { ...g, allocated: r2((g.allocated || 0) + amount) } : g));
         }
       } else {
         setMainAccount((p) => ({ ...p, balance: r2(p.balance + amount) }));
@@ -1438,7 +1438,7 @@ const [openVersions, setOpenVersions] = useState({
           : setMainAccount((p) => ({ ...p, balance: r2(p.balance - oldAmt) }));
       } else if (old.sourceAccount === "savings") {
         setSavingsAccount((p) => ({ ...p, balance: r2(p.balance + oldAmt) }));
-        if (old.goalId) setGoals((prev) => prev.map((g) => g.id === old.goalId ? { ...g, allocated: r2((g.allocated || 0) + oldAmt) } : g));
+        if (old.goalId) setGoals((prev) => prev.map((g) => String(g.id) === String(old.goalId) ? { ...g, allocated: r2((g.allocated || 0) + oldAmt) } : g));
       } else {
         setMainAccount((p) => ({ ...p, balance: r2(p.balance + oldAmt) }));
       }
@@ -1448,7 +1448,7 @@ const [openVersions, setOpenVersions] = useState({
           : setMainAccount((p) => ({ ...p, balance: r2(p.balance + newAmount) }));
       } else if (editTransaction.sourceAccount === "savings") {
         setSavingsAccount((p) => ({ ...p, balance: r2(p.balance - newAmount) }));
-        if (editTransaction.goalId) setGoals((prev) => prev.map((g) => g.id === editTransaction.goalId ? { ...g, allocated: r2(Math.max((g.allocated || 0) - newAmount, 0)) } : g));
+        if (editTransaction.goalId) setGoals((prev) => prev.map((g) => String(g.id) === String(editTransaction.goalId) ? { ...g, allocated: r2(Math.max((g.allocated || 0) - newAmount, 0)) } : g));
       } else {
         setMainAccount((p) => ({ ...p, balance: r2(p.balance - newAmount) }));
       }
@@ -2956,7 +2956,7 @@ function toggleVersion(version) {
                 </div>
                 <div style={{ display: "grid", gap: 8 }}>
                   {monthTransactions.filter((t) => t.sourceAccount === "savings" && t.type === "expense").sort((a, b) => new Date(b.date) - new Date(a.date)).map((t) => {
-                    const goal = goals.find((g) => g.id === t.goalId);
+                    const goal = goals.find((g) => String(g.id) === String(t.goalId));
                     return (
                       <div key={t.id} style={{ ...s.softCard, display: "flex", justifyContent: "space-between", alignItems: "center" }}>
                         <div>
