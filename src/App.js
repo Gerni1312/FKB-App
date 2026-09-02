@@ -82,6 +82,26 @@ const chartColors = ["#22c55e", "#f59e0b", "#ef4444", "#0ea5e9", "#8b5cf6", "#14
   const mobileOnly = typeof window !== "undefined" && window.innerWidth < 640;
   const versionHistory = [
     {
+      version: "v5.1",
+      name: "Kategorie-Manager",
+      date: "2026-09-02",
+      notes: [
+        {
+          title: "Kategorien verwalten",
+          items: [
+            "Neuer Kategorie-Manager in den Einstellungen — öffnet sich als Modal.",
+            "Zwei Tabs: «Standard» für die eingebauten Kategorien, «Eigene» für selbst erstellte.",
+            "Jede Kategorie kann per Toggle aktiviert oder deaktiviert werden.",
+            "Deaktivierte Kategorien erscheinen nicht mehr bei Buchungen und Budgets.",
+            "Reihenfolge frei definierbar: ▲▼-Buttons verschieben Kategorien nach oben oder unten.",
+            "Standardkategorien können deaktiviert, aber nicht gelöscht werden.",
+            "Eigene Kategorien direkt im Modal hinzufügen und löschen.",
+            "Einstellungen werden geräteübergreifend synchronisiert.",
+          ],
+        },
+      ],
+    },
+    {
       version: "v5.0",
       name: "Datensicherheit & Reset",
       date: "2026-09-02",
@@ -1011,6 +1031,10 @@ function App() {
   const s = styles(darkMode, mobileOnly);
 
   const [customCategories, setCustomCategories] = useState([]);
+  const [disabledCategories, setDisabledCategories] = useState([]);
+  const [categoryOrder, setCategoryOrder] = useState([]);
+  const [categoryModalOpen, setCategoryModalOpen] = useState(false);
+  const [categoryModalTab, setCategoryModalTab] = useState("standard");
   const [newCategoryInput, setNewCategoryInput] = useState("");
   const [editBudget, setEditBudget] = useState(null);
   const [newTransaction, setNewTransaction] = useState({ type: "expense", category: "Essen", amount: "", note: "", date: new Date().toISOString().slice(0, 10), bucket: "flex", targetAccount: "main", sourceAccount: "main", goalId: "" });
@@ -1019,7 +1043,18 @@ function App() {
   const [newGoal, setNewGoal] = useState({ name: "", target: "" });
   const [savingsTransfer, setSavingsTransfer] = useState({ type: "deposit", amount: "", note: "" });
 
-  const allCategories = useMemo(() => [...new Set([...categories, ...customCategories])].sort(), [customCategories]);
+  const allCategories = useMemo(() => {
+    const all = [...new Set([...categories, ...customCategories])];
+    const active = all.filter((c) => !disabledCategories.includes(c));
+    return active.sort((a, b) => {
+      const ai = categoryOrder.indexOf(a);
+      const bi = categoryOrder.indexOf(b);
+      if (ai === -1 && bi === -1) return a.localeCompare(b);
+      if (ai === -1) return 1;
+      if (bi === -1) return -1;
+      return ai - bi;
+    });
+  }, [customCategories, disabledCategories, categoryOrder]);
 
   const selectedMonthDate = useMemo(() => getShiftedMonthDate(monthOffset), [monthOffset]);
   const selectedMonthKey = useMemo(() => getMonthKey(selectedMonthDate), [selectedMonthDate]);
@@ -1071,6 +1106,8 @@ const [openVersions, setOpenVersions] = useState({
     if (parsed.goals) setGoals(parsed.goals);
     if (parsed.debts) setDebts(parsed.debts);
     if (Array.isArray(parsed.customCategories)) setCustomCategories(parsed.customCategories);
+    if (Array.isArray(parsed.disabledCategories)) setDisabledCategories(parsed.disabledCategories);
+    if (Array.isArray(parsed.categoryOrder)) setCategoryOrder(parsed.categoryOrder);
     if (parsed.mainAccount) setMainAccount(parsed.mainAccount);
     if (parsed.savingsAccount) setSavingsAccount(parsed.savingsAccount);
     if (parsed.settings?.currency) setCurrency(parsed.settings.currency);
@@ -1115,6 +1152,8 @@ const [openVersions, setOpenVersions] = useState({
         setDarkMode(seedData.settings.darkMode);
         setUsername(seedData.settings.username);
         setCustomCategories([]);
+        setDisabledCategories([]);
+        setCategoryOrder([]);
         setAuthLoading(false);
         setDataLoaded(false);
       }
@@ -1130,12 +1169,12 @@ const [openVersions, setOpenVersions] = useState({
     if (skipNextWrite.current) { skipNextWrite.current = false; return; }
     const data = {
       transactions, budgets, recurring, goals, debts, mainAccount, savingsAccount,
-      customCategories,
+      customCategories, disabledCategories, categoryOrder,
       settings: { currency, weeklyMode, monthOffset, payday, darkMode, username },
     };
     localStorage.setItem(STORAGE_KEY, JSON.stringify(data));
     setDoc(doc(db, "users", user.uid), data).catch(console.error);
-  }, [user, dataLoaded, transactions, budgets, recurring, goals, debts, mainAccount, savingsAccount, customCategories, currency, weeklyMode, monthOffset, payday, darkMode, username]);
+  }, [user, dataLoaded, transactions, budgets, recurring, goals, debts, mainAccount, savingsAccount, customCategories, disabledCategories, categoryOrder, currency, weeklyMode, monthOffset, payday, darkMode, username]);
 
   useEffect(() => {
     if (!dataLoaded) return;
@@ -1482,13 +1521,67 @@ const [openVersions, setOpenVersions] = useState({
 
   function addCustomCategory() {
     const val = newCategoryInput.trim();
-    if (!val || allCategories.some((c) => c.toLowerCase() === val.toLowerCase())) return;
+    const allExisting = [...new Set([...categories, ...customCategories])];
+    if (!val || allExisting.some((c) => c.toLowerCase() === val.toLowerCase())) return;
     setCustomCategories((prev) => [...prev, val]);
+    setCategoryOrder((prev) => {
+      const all = [...new Set([...categories, ...customCategories, val])];
+      const ordered = [...all].sort((a, b) => {
+        const ai = prev.indexOf(a); const bi = prev.indexOf(b);
+        if (ai === -1 && bi === -1) return a.localeCompare(b);
+        if (ai === -1) return 1; if (bi === -1) return -1;
+        return ai - bi;
+      });
+      return [...ordered];
+    });
     setNewCategoryInput("");
   }
 
   function deleteCustomCategory(cat) {
     setCustomCategories((prev) => prev.filter((c) => c !== cat));
+    setCategoryOrder((prev) => prev.filter((c) => c !== cat));
+    setDisabledCategories((prev) => prev.filter((c) => c !== cat));
+  }
+
+  function toggleCategory(cat) {
+    setDisabledCategories((prev) =>
+      prev.includes(cat) ? prev.filter((c) => c !== cat) : [...prev, cat]
+    );
+  }
+
+  function moveCategoryUp(cat) {
+    setCategoryOrder((prev) => {
+      const all = [...new Set([...categories, ...customCategories])];
+      const base = all.map((c) => (prev.includes(c) ? c : c));
+      const ordered = [...all].sort((a, b) => {
+        const ai = prev.indexOf(a); const bi = prev.indexOf(b);
+        if (ai === -1 && bi === -1) return a.localeCompare(b);
+        if (ai === -1) return 1; if (bi === -1) return -1;
+        return ai - bi;
+      });
+      const idx = ordered.indexOf(cat);
+      if (idx <= 0) return prev;
+      const next = [...ordered];
+      [next[idx - 1], next[idx]] = [next[idx], next[idx - 1]];
+      return next;
+    });
+  }
+
+  function moveCategoryDown(cat) {
+    setCategoryOrder((prev) => {
+      const all = [...new Set([...categories, ...customCategories])];
+      const ordered = [...all].sort((a, b) => {
+        const ai = prev.indexOf(a); const bi = prev.indexOf(b);
+        if (ai === -1 && bi === -1) return a.localeCompare(b);
+        if (ai === -1) return 1; if (bi === -1) return -1;
+        return ai - bi;
+      });
+      const idx = ordered.indexOf(cat);
+      if (idx === -1 || idx >= ordered.length - 1) return prev;
+      const next = [...ordered];
+      [next[idx], next[idx + 1]] = [next[idx + 1], next[idx]];
+      return next;
+    });
   }
 
   async function resetAllData() {
@@ -1509,6 +1602,8 @@ const [openVersions, setOpenVersions] = useState({
       setMainAccount(seedData.mainAccount);
       setSavingsAccount(seedData.savingsAccount);
       setCustomCategories([]);
+      setDisabledCategories([]);
+      setCategoryOrder([]);
       setResetModalOpen(false);
       setResetPassword("");
     } catch {
@@ -3050,23 +3145,14 @@ function toggleVersion(version) {
           </div>
 
           <div style={s.softCard}>
-            <div style={{ fontWeight: 800, color: s.text }}>Eigene Kategorien</div>
-            <div style={{ fontSize: 14, color: s.textMuted, marginTop: 4, marginBottom: 14 }}>Erstelle eigene Kategorien für Buchungen und Budgets.</div>
-            <div style={{ display: "flex", gap: 8, marginBottom: 12 }}>
-              <input style={{ ...s.input, flex: 1 }} placeholder="Neue Kategorie (z.B. Thun Reise)" value={newCategoryInput} onChange={(e) => setNewCategoryInput(e.target.value)} onKeyDown={(e) => e.key === "Enter" && addCustomCategory()} />
-              <button style={s.button} onClick={addCustomCategory}>Hinzufügen</button>
+            <div style={{ fontWeight: 800, color: s.text }}>Kategorien</div>
+            <div style={{ fontSize: 14, color: s.textMuted, marginTop: 4, marginBottom: 14 }}>
+              Verwalte Standard- und eigene Kategorien, aktiviere oder deaktiviere sie und definiere die Reihenfolge.
+              {disabledCategories.length > 0 && <span style={{ marginLeft: 8, background: darkMode ? "rgba(251,191,36,0.15)" : "#fef9c3", color: darkMode ? "#fbbf24" : "#a16207", borderRadius: 6, padding: "1px 7px", fontSize: 12, fontWeight: 600 }}>{disabledCategories.length} deaktiviert</span>}
             </div>
-            {customCategories.length > 0 && (
-              <div style={{ display: "flex", flexWrap: "wrap", gap: 8 }}>
-                {customCategories.map((cat) => (
-                  <div key={cat} style={{ display: "flex", alignItems: "center", gap: 6, background: darkMode ? "rgba(99,102,241,0.15)" : "#ede9fe", color: darkMode ? "#a5b4fc" : "#6d28d9", borderRadius: 20, padding: "4px 10px 4px 12px", fontSize: 13, fontWeight: 600 }}>
-                    {cat}
-                    <button onClick={() => deleteCustomCategory(cat)} style={{ background: "none", border: "none", cursor: "pointer", color: "inherit", padding: 0, lineHeight: 1, marginLeft: 2, opacity: 0.7 }}>✕</button>
-                  </div>
-                ))}
-              </div>
-            )}
-            {customCategories.length === 0 && <div style={{ fontSize: 13, color: s.textMuted }}>Noch keine eigenen Kategorien.</div>}
+            <button style={{ ...s.button, width: "100%", justifyContent: "center" }} onClick={() => { setCategoryModalOpen(true); setCategoryModalTab("standard"); }}>
+              Kategorien verwalten
+            </button>
           </div>
 
           <div style={s.softCard}>
@@ -3187,6 +3273,82 @@ function toggleVersion(version) {
           </div>
         </div>
       )}
+
+      {categoryModalOpen && (() => {
+        const allCats = [...new Set([...categories, ...customCategories])];
+        const ordered = [...allCats].sort((a, b) => {
+          const ai = categoryOrder.indexOf(a); const bi = categoryOrder.indexOf(b);
+          if (ai === -1 && bi === -1) return a.localeCompare(b);
+          if (ai === -1) return 1; if (bi === -1) return -1;
+          return ai - bi;
+        });
+        const standardOrdered = ordered.filter((c) => categories.includes(c));
+        const customOrdered = ordered.filter((c) => customCategories.includes(c));
+        const tabList = categoryModalTab === "standard" ? standardOrdered : customOrdered;
+        const toggleStyle = (active) => ({
+          width: 40, height: 22, borderRadius: 11, background: active ? "#6366f1" : (darkMode ? "#3f3f46" : "#d1d5db"),
+          position: "relative", cursor: "pointer", border: "none", flexShrink: 0, transition: "background 0.2s",
+        });
+        const knobStyle = (active) => ({
+          position: "absolute", top: 3, left: active ? 21 : 3, width: 16, height: 16,
+          borderRadius: "50%", background: "white", transition: "left 0.2s",
+        });
+        return (
+          <div style={{ position: "fixed", inset: 0, background: "rgba(0,0,0,0.6)", zIndex: 9998, display: "flex", alignItems: "center", justifyContent: "center", padding: 16 }}>
+            <div style={{ ...s.card, padding: 0, maxWidth: 480, width: "100%", maxHeight: "85vh", display: "flex", flexDirection: "column" }}>
+              <div style={{ padding: "20px 20px 0" }}>
+                <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 16 }}>
+                  <div style={{ fontWeight: 800, fontSize: 18, color: s.text }}>Kategorien verwalten</div>
+                  <button onClick={() => setCategoryModalOpen(false)} style={{ background: "none", border: "none", cursor: "pointer", color: s.textMuted, fontSize: 20, lineHeight: 1, padding: 4 }}>✕</button>
+                </div>
+                <div style={{ display: "flex", gap: 4, background: s.surfaceAlt, borderRadius: 10, padding: 4, border: `1px solid ${s.border}`, marginBottom: 16 }}>
+                  {["standard", "custom"].map((tab) => (
+                    <button key={tab} onClick={() => setCategoryModalTab(tab)} style={{ flex: 1, height: 32, borderRadius: 7, border: "none", cursor: "pointer", fontSize: 13, fontWeight: categoryModalTab === tab ? 700 : 500, background: categoryModalTab === tab ? (darkMode ? "rgba(255,255,255,0.12)" : "white") : "transparent", color: categoryModalTab === tab ? s.text : s.textMuted, boxShadow: categoryModalTab === tab ? "0 1px 4px rgba(0,0,0,0.1)" : "none", transition: "all 0.15s" }}>
+                      {tab === "standard" ? `Standard (${categories.length})` : `Eigene (${customCategories.length})`}
+                    </button>
+                  ))}
+                </div>
+              </div>
+              <div style={{ flex: 1, overflowY: "auto", padding: "0 20px 20px" }}>
+                {tabList.length === 0 && categoryModalTab === "custom" && (
+                  <div style={{ fontSize: 13, color: s.textMuted, marginBottom: 16 }}>Noch keine eigenen Kategorien.</div>
+                )}
+                <div style={{ display: "grid", gap: 6 }}>
+                  {tabList.map((cat, idx) => {
+                    const isActive = !disabledCategories.includes(cat);
+                    const isFirst = idx === 0;
+                    const isLast = idx === tabList.length - 1;
+                    return (
+                      <div key={cat} style={{ display: "flex", alignItems: "center", gap: 10, background: s.surfaceAlt, border: `1px solid ${s.border}`, borderRadius: 10, padding: "10px 12px" }}>
+                        <div style={{ display: "flex", flexDirection: "column", gap: 2 }}>
+                          <button onClick={() => moveCategoryUp(cat)} disabled={isFirst} style={{ background: "none", border: "none", cursor: isFirst ? "default" : "pointer", color: isFirst ? "transparent" : s.textMuted, fontSize: 11, lineHeight: 1, padding: "1px 3px" }}>▲</button>
+                          <button onClick={() => moveCategoryDown(cat)} disabled={isLast} style={{ background: "none", border: "none", cursor: isLast ? "default" : "pointer", color: isLast ? "transparent" : s.textMuted, fontSize: 11, lineHeight: 1, padding: "1px 3px" }}>▼</button>
+                        </div>
+                        <span style={{ flex: 1, fontSize: 14, fontWeight: 600, color: isActive ? s.text : s.textMuted }}>{cat}</span>
+                        {!isActive && <span style={{ fontSize: 11, color: s.textMuted, background: darkMode ? "rgba(255,255,255,0.05)" : "#f3f4f6", borderRadius: 4, padding: "1px 6px" }}>inaktiv</span>}
+                        <button onClick={() => toggleCategory(cat)} style={toggleStyle(isActive)}>
+                          <div style={knobStyle(isActive)} />
+                        </button>
+                        {categoryModalTab === "custom" && (
+                          <button onClick={() => deleteCustomCategory(cat)} style={{ background: "none", border: "none", cursor: "pointer", color: "#dc2626", padding: 4, lineHeight: 1 }}>
+                            <Trash2 size={14} />
+                          </button>
+                        )}
+                      </div>
+                    );
+                  })}
+                </div>
+                {categoryModalTab === "custom" && (
+                  <div style={{ display: "flex", gap: 8, marginTop: 16 }}>
+                    <input style={{ ...s.input, flex: 1 }} placeholder="Neue Kategorie…" value={newCategoryInput} onChange={(e) => setNewCategoryInput(e.target.value)} onKeyDown={(e) => e.key === "Enter" && addCustomCategory()} />
+                    <button style={s.button} onClick={addCustomCategory}>Hinzufügen</button>
+                  </div>
+                )}
+              </div>
+            </div>
+          </div>
+        );
+      })()}
 
       {resetModalOpen && (
         <div style={{ position: "fixed", inset: 0, background: "rgba(0,0,0,0.6)", zIndex: 9999, display: "flex", alignItems: "center", justifyContent: "center", padding: 16 }}>
