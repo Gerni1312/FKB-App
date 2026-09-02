@@ -82,6 +82,145 @@ const chartColors = ["#22c55e", "#f59e0b", "#ef4444", "#0ea5e9", "#8b5cf6", "#14
   const mobileOnly = typeof window !== "undefined" && window.innerWidth < 640;
   const versionHistory = [
     {
+      version: "v5.0",
+      name: "Datensicherheit & Reset",
+      date: "2026-09-02",
+      notes: [
+        {
+          title: "Datensicherheit",
+          items: [
+            "Abmelden löscht jetzt alle lokalen Daten vollständig — kein Datenleck zwischen Konten mehr.",
+            "Neues Konto startet garantiert leer, auch wenn dasselbe Gerät vorher von jemand anderem genutzt wurde.",
+            "localStorage wird beim Logout sofort geleert.",
+          ],
+        },
+        {
+          title: "Gefahrenzone in Einstellungen",
+          items: [
+            "Neue Option «Alle Daten löschen» setzt das Konto auf null zurück.",
+            "Buchungen, Budgets, Sparziele, Schulden und Kontostand werden dauerhaft gelöscht.",
+            "Sicherheitsabfrage: Passwort muss eingegeben werden um die Aktion auszuführen.",
+            "Einstellungen (Währung, Name, Dark Mode usw.) bleiben nach dem Reset erhalten.",
+          ],
+        },
+      ],
+    },
+    {
+      version: "v4.9",
+      name: "Sparkonto-Ausgaben",
+      date: "2026-09-02",
+      notes: [
+        {
+          title: "Zahlungen vom Sparkonto",
+          items: [
+            "Bei Ausgaben kann neu «Von Sparkonto» als Quelle gewählt werden.",
+            "Betrag wird direkt vom Sparkonto abgebucht — Hauptkonto bleibt unberührt.",
+            "Optional kann ein Sparziel gewählt werden, von dem das Geld stammt.",
+            "Die verfügbare Menge des gewählten Sparziels wird direkt im Dropdown angezeigt.",
+            "Ausgaben vom Sparkonto beeinflussen weder Restbudget noch Monatsstatistiken.",
+          ],
+        },
+        {
+          title: "Analysen",
+          items: [
+            "Neuer Abschnitt «Sparkonto Ausgaben» in den Analysen — komplett separat.",
+            "Zeigt Total, Anzahl Buchungen und alle Einzelbuchungen des Monats.",
+            "Bucket-Auswahl (Fix/Variabel/Sparen) und Kategorie werden beim Sparkonto ausgeblendet.",
+          ],
+        },
+      ],
+    },
+    {
+      version: "v4.8",
+      name: "Vermögensverlauf & Analysen",
+      date: "2026-09-01",
+      notes: [
+        {
+          title: "Vermögensverlauf",
+          items: [
+            "Neue Zeitraum-Auswahl: 1M, 3M, 6M und 12M.",
+            "Bei 1 Monat werden täglich alle Buchungen ausgewertet — man sieht genau wann Geld fliesst.",
+            "Hauptkonto, Sparkonto und kombiniertes Vermögen als separate Linien.",
+          ],
+        },
+        {
+          title: "Monats-Verlauf",
+          items: [
+            "Neue Option «1M» im Verlauf-Chart.",
+            "Tagesansicht zeigt jeden einzelnen Tag des aktuellen Finanzmonats.",
+          ],
+        },
+      ],
+    },
+    {
+      version: "v4.7",
+      name: "Budgets & Kategorien",
+      date: "2026-09-01",
+      notes: [
+        {
+          title: "Budgets",
+          items: [
+            "Budgets können jetzt direkt bearbeitet werden — Stift-Icon öffnet ein Inline-Formular.",
+            "Name, Betrag und Kategorie eines Budgets sind vollständig editierbar.",
+          ],
+        },
+        {
+          title: "Eigene Kategorien",
+          items: [
+            "In den Einstellungen können eigene Kategorien hinzugefügt werden.",
+            "Eigene Kategorien erscheinen beim Erfassen von Buchungen und Budgets.",
+            "Nicht mehr benötigte Kategorien lassen sich einzeln löschen.",
+          ],
+        },
+      ],
+    },
+    {
+      version: "v4.6",
+      name: "Rundung & Sauberkeit",
+      date: "2026-09-01",
+      notes: [
+        {
+          title: "Beträge",
+          items: [
+            "Alle Beträge werden konsequent auf 2 Nachkommastellen gerundet.",
+            "Kein unübersichtlicher Zahlensalat mehr bei Berechnungen (z.B. 1143.8799999...).",
+            "Hauptkonto- und Sparkonto-Saldo werden bei jeder Buchung korrekt gerundet.",
+          ],
+        },
+      ],
+    },
+    {
+      version: "v4.5",
+      name: "Wiederkehrende Buchungen Fix",
+      date: "2026-09-01",
+      notes: [
+        {
+          title: "Bugfix",
+          items: [
+            "Wiederkehrende Ausgaben (z.B. Krankenkasse) wurden nicht korrekt automatisch gebucht.",
+            "Problem behoben: Buchung wird jetzt zuverlässig am richtigen Tag erstellt.",
+            "Duplikate werden sicher verhindert — die echte Transaktion ist die Kontrolle, nicht ein interner Flag.",
+            "Neue Konten starten komplett leer — keine Beispieldaten mehr.",
+          ],
+        },
+      ],
+    },
+    {
+      version: "v4.4",
+      name: "Kontostand Synchronisation",
+      date: "2026-09-01",
+      notes: [
+        {
+          title: "Bugfix",
+          items: [
+            "Monats-Navigation (zurück/vor) wurde fälschlicherweise in der Cloud gespeichert.",
+            "Beim Laden der App landete man dadurch im falschen Monat — jetzt bleibt die Navigation rein lokal.",
+            "Buchungen vom Sparkonto werden beim Löschen korrekt rückgängig gemacht.",
+          ],
+        },
+      ],
+    },
+    {
       version: "v4.3",
       name: "Animationen & Micro-Interactions",
       date: "2026-08-21",
