@@ -1198,7 +1198,7 @@ const [openVersions, setOpenVersions] = useState({
 
   const spendingByCategory = useMemo(() => {
     const grouped = {};
-    monthTransactions.filter((t) => t.type === "expense").forEach((t) => {
+    monthTransactions.filter((t) => t.type === "expense" && t.sourceAccount !== "savings").forEach((t) => {
       grouped[t.category] = (grouped[t.category] || 0) + Number(t.amount);
     });
     return Object.entries(grouped).map(([name, value]) => ({ name, value }));
