@@ -958,6 +958,20 @@ const [openVersions, setOpenVersions] = useState({
           setDataLoaded(true);
         }, (e) => { console.error(e); setAuthLoading(false); setDataLoaded(true); });
       } else {
+        localStorage.removeItem(STORAGE_KEY);
+        setTransactions(seedData.transactions);
+        setBudgets(seedData.budgets);
+        setRecurring(seedData.recurring);
+        setGoals(seedData.goals);
+        setDebts([]);
+        setMainAccount(seedData.mainAccount);
+        setSavingsAccount(seedData.savingsAccount);
+        setCurrency(seedData.settings.currency);
+        setWeeklyMode(seedData.settings.weeklyMode);
+        setPayday(seedData.settings.payday);
+        setDarkMode(seedData.settings.darkMode);
+        setUsername(seedData.settings.username);
+        setCustomCategories([]);
         setAuthLoading(false);
         setDataLoaded(false);
       }
