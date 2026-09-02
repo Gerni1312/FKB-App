@@ -1305,10 +1305,10 @@ const [openVersions, setOpenVersions] = useState({
     const shortNames = ["Jan","Feb","Mär","Apr","Mai","Jun","Jul","Aug","Sep","Okt","Nov","Dez"];
     const mainNow = Number(mainAccount.balance || 0);
     const savingsNow = Number(savingsAccount.balance || 0);
-    const mainTxns = transactions.filter((t) => t.affectsAccount && t.targetAccount !== "savings");
-    const savingsTxns = transactions.filter((t) => t.affectsAccount && t.targetAccount === "savings");
+    const mainTxns = transactions.filter((t) => t.affectsAccount && t.targetAccount !== "savings" && t.sourceAccount !== "savings");
+    const savingsTxns = transactions.filter((t) => t.affectsAccount && (t.targetAccount === "savings" || t.sourceAccount === "savings"));
     const mainNet = mainTxns.reduce((s, t) => s + (t.type === "income" ? Number(t.amount) : -Number(t.amount)), 0);
-    const savingsNet = savingsTxns.reduce((s, t) => s + (t.type === "income" ? Number(t.amount) : -Number(t.amount)), 0);
+    const savingsNet = savingsTxns.reduce((s, t) => s + (t.targetAccount === "savings" ? Number(t.amount) : -Number(t.amount)), 0);
     const mainBaseline = mainNow - mainNet;
     const savingsBaseline = savingsNow - savingsNet;
 
