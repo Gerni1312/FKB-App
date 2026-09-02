@@ -637,7 +637,7 @@ function getRecurringDateForMonth(monthDate, dayOfMonth) {
 function getBudgetSpentForRange(transactions, budget, monthOffset, payday) {
   const key = (budget.category || budget.name).toLowerCase();
   const base = transactions.filter(
-    (t) => t.type === "expense" && t.category.toLowerCase() === key
+    (t) => t.type === "expense" && (t.category || "").toLowerCase() === key
   );
 
   if (budget.resetMode === "manual") {
@@ -1278,7 +1278,7 @@ const [openVersions, setOpenVersions] = useState({
       .filter((t) => (filterBucket === "all" ? true : t.bucket === filterBucket))
       .filter((t) => {
         const q = search.toLowerCase();
-        return t.category.toLowerCase().includes(q) || t.note.toLowerCase().includes(q) || t.date.includes(q);
+        return (t.category || "").toLowerCase().includes(q) || (t.note || "").toLowerCase().includes(q) || t.date.includes(q);
       })
       .sort((a, b) => new Date(b.date) - new Date(a.date));
   }, [txMonthFilter, transactions, monthTransactions, search, filterBucket]);
