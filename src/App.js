@@ -1,6 +1,6 @@
 import React, { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { auth, db } from "./firebase";
-import { createUserWithEmailAndPassword, signInWithEmailAndPassword, signOut, onAuthStateChanged, reauthenticateWithCredential, EmailAuthProvider } from "firebase/auth";
+import { createUserWithEmailAndPassword, signInWithEmailAndPassword, signOut, onAuthStateChanged, reauthenticateWithCredential, EmailAuthProvider, sendPasswordResetEmail } from "firebase/auth";
 import { doc, setDoc, onSnapshot } from "firebase/firestore";
 import {
   Plus,
@@ -994,6 +994,9 @@ function App() {
   const [authError, setAuthError] = useState("");
   const [authBusy, setAuthBusy] = useState(false);
   const [dataLoaded, setDataLoaded] = useState(false);
+  const [forgotMode, setForgotMode] = useState(false);
+  const [forgotSent, setForgotSent] = useState(false);
+  const [forgotError, setForgotError] = useState("");
   const [resetModalOpen, setResetModalOpen] = useState(false);
   const [resetPassword, setResetPassword] = useState("");
   const [resetError, setResetError] = useState("");
@@ -1959,6 +1962,20 @@ function toggleVersion(version) {
 
 
 
+  async function handleForgot() {
+    if (!authEmail) { setForgotError("Bitte E-Mail eingeben."); return; }
+    setAuthBusy(true);
+    setForgotError("");
+    try {
+      await sendPasswordResetEmail(auth, authEmail);
+      setForgotSent(true);
+    } catch (e) {
+      const msgs = { "auth/invalid-email": "Ungültige E-Mail-Adresse.", "auth/user-not-found": "Kein Konto mit dieser E-Mail." };
+      setForgotError(msgs[e.code] || "Fehler beim Senden. Bitte nochmals versuchen.");
+    }
+    setAuthBusy(false);
+  }
+
   // Auth laden
   if (authLoading) {
     return <div style={{ minHeight: "100vh", background: "#111113", display: "grid", placeItems: "center" }}><div style={{ color: "#a1a1aa", fontSize: 14 }}>Laden…</div></div>;
@@ -1973,29 +1990,59 @@ function toggleVersion(version) {
           <div style={{ fontSize: 13, fontWeight: 800, letterSpacing: 2, textTransform: "uppercase", color: "#f4f4f5", marginBottom: 8 }}>FKB</div>
           <div style={{ fontSize: 28, fontWeight: 900, color: "#f4f4f5", marginBottom: 4 }}>{authMode === "login" ? "Anmelden" : "Registrieren"}</div>
           <div style={{ fontSize: 14, color: "#71717a", marginBottom: 28 }}>Deine Daten werden sicher in der Cloud gespeichert.</div>
-          <div style={{ display: "flex", gap: 8, marginBottom: 24, background: "#1c1c1f", borderRadius: 14, padding: 4 }}>
-            {["login", "register"].map((m) => (
-              <button key={m} onClick={() => { setAuthMode(m); setAuthError(""); setAuthStep(1); }} style={{ flex: 1, height: 38, borderRadius: 10, border: "none", cursor: "pointer", fontWeight: 600, fontSize: 13, background: authMode === m ? "#f4f4f5" : "transparent", color: authMode === m ? "#18181b" : "#71717a" }}>
-                {m === "login" ? "Anmelden" : "Registrieren"}
+          {forgotMode ? (
+            <>
+              <div style={{ fontSize: 14, color: "#a1a1aa", marginBottom: 20 }}>Gib deine E-Mail-Adresse ein. Du erhältst einen Link um dein Passwort zurückzusetzen.</div>
+              {forgotSent ? (
+                <div style={{ background: "rgba(22,163,74,0.12)", border: "1px solid rgba(22,163,74,0.3)", borderRadius: 12, padding: "14px 16px", fontSize: 14, color: "#4ade80", lineHeight: 1.6 }}>
+                  E-Mail gesendet! Schau in deinem Postfach nach und folge dem Link.
+                </div>
+              ) : (
+                <>
+                  <div><div style={{ fontSize: 12, fontWeight: 600, color: "#71717a", marginBottom: 6, textTransform: "uppercase", letterSpacing: 1 }}>E-Mail</div><input style={inputStyle} type="email" value={authEmail} onChange={(e) => setAuthEmail(e.target.value)} placeholder="deine@email.ch" onKeyDown={(e) => e.key === "Enter" && handleForgot()} autoFocus /></div>
+                  {forgotError && <div style={{ marginTop: 10, fontSize: 13, color: "#fca5a5", background: "rgba(220,38,38,0.1)", borderRadius: 10, padding: "10px 14px" }}>{forgotError}</div>}
+                  <button onClick={handleForgot} disabled={authBusy} style={{ marginTop: 16, width: "100%", height: 48, borderRadius: 12, border: "none", background: "#f4f4f5", color: "#18181b", fontWeight: 700, fontSize: 15, cursor: authBusy ? "not-allowed" : "pointer", opacity: authBusy ? 0.7 : 1 }}>
+                    {authBusy ? "Wird gesendet…" : "Reset-Link senden"}
+                  </button>
+                </>
+              )}
+              <button onClick={() => { setForgotMode(false); setForgotSent(false); setForgotError(""); }} style={{ marginTop: 14, width: "100%", height: 40, borderRadius: 12, border: "1px solid rgba(255,255,255,0.1)", background: "transparent", color: "#71717a", fontWeight: 600, fontSize: 13, cursor: "pointer" }}>
+                ← Zurück zum Login
               </button>
-            ))}
-          </div>
-          {authMode === "register" && authStep === 2 ? (
-            <div style={{ display: "grid", gap: 12 }}>
-              <div style={{ fontSize: 14, color: "#a1a1aa", marginBottom: 4 }}>Fast geschafft! Wie sollen wir dich nennen?</div>
-              <div><div style={{ fontSize: 12, fontWeight: 600, color: "#71717a", marginBottom: 6, textTransform: "uppercase", letterSpacing: 1 }}>Dein Name</div><input style={inputStyle} type="text" value={authUsername} onChange={(e) => setAuthUsername(e.target.value)} placeholder="z.B. Jeffrey" onKeyDown={(e) => e.key === "Enter" && handleAuth()} autoFocus /></div>
-            </div>
+            </>
           ) : (
-            <div style={{ display: "grid", gap: 12 }}>
-              <div><div style={{ fontSize: 12, fontWeight: 600, color: "#71717a", marginBottom: 6, textTransform: "uppercase", letterSpacing: 1 }}>E-Mail</div><input style={inputStyle} type="email" value={authEmail} onChange={(e) => setAuthEmail(e.target.value)} placeholder="deine@email.ch" /></div>
-              <div><div style={{ fontSize: 12, fontWeight: 600, color: "#71717a", marginBottom: 6, textTransform: "uppercase", letterSpacing: 1 }}>Passwort</div><input style={inputStyle} type="password" value={authPassword} onChange={(e) => setAuthPassword(e.target.value)} placeholder="••••••••" onKeyDown={(e) => e.key === "Enter" && handleAuth()} /></div>
-            </div>
+            <>
+              <div style={{ display: "flex", gap: 8, marginBottom: 24, background: "#1c1c1f", borderRadius: 14, padding: 4 }}>
+                {["login", "register"].map((m) => (
+                  <button key={m} onClick={() => { setAuthMode(m); setAuthError(""); setAuthStep(1); }} style={{ flex: 1, height: 38, borderRadius: 10, border: "none", cursor: "pointer", fontWeight: 600, fontSize: 13, background: authMode === m ? "#f4f4f5" : "transparent", color: authMode === m ? "#18181b" : "#71717a" }}>
+                    {m === "login" ? "Anmelden" : "Registrieren"}
+                  </button>
+                ))}
+              </div>
+              {authMode === "register" && authStep === 2 ? (
+                <div style={{ display: "grid", gap: 12 }}>
+                  <div style={{ fontSize: 14, color: "#a1a1aa", marginBottom: 4 }}>Fast geschafft! Wie sollen wir dich nennen?</div>
+                  <div><div style={{ fontSize: 12, fontWeight: 600, color: "#71717a", marginBottom: 6, textTransform: "uppercase", letterSpacing: 1 }}>Dein Name</div><input style={inputStyle} type="text" value={authUsername} onChange={(e) => setAuthUsername(e.target.value)} placeholder="z.B. Jeffrey" onKeyDown={(e) => e.key === "Enter" && handleAuth()} autoFocus /></div>
+                </div>
+              ) : (
+                <div style={{ display: "grid", gap: 12 }}>
+                  <div><div style={{ fontSize: 12, fontWeight: 600, color: "#71717a", marginBottom: 6, textTransform: "uppercase", letterSpacing: 1 }}>E-Mail</div><input style={inputStyle} type="email" value={authEmail} onChange={(e) => setAuthEmail(e.target.value)} placeholder="deine@email.ch" /></div>
+                  <div>
+                    <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 6 }}>
+                      <div style={{ fontSize: 12, fontWeight: 600, color: "#71717a", textTransform: "uppercase", letterSpacing: 1 }}>Passwort</div>
+                      {authMode === "login" && <button onClick={() => { setForgotMode(true); setForgotSent(false); setForgotError(""); }} style={{ background: "none", border: "none", cursor: "pointer", fontSize: 12, color: "#6366f1", fontWeight: 600, padding: 0 }}>Passwort vergessen?</button>}
+                    </div>
+                    <input style={inputStyle} type="password" value={authPassword} onChange={(e) => setAuthPassword(e.target.value)} placeholder="••••••••" onKeyDown={(e) => e.key === "Enter" && handleAuth()} />
+                  </div>
+                </div>
+              )}
+              {authError && <div style={{ marginTop: 12, fontSize: 13, color: "#fca5a5", background: "rgba(220,38,38,0.1)", borderRadius: 10, padding: "10px 14px" }}>{authError}</div>}
+              <button onClick={handleAuth} disabled={authBusy} style={{ marginTop: 20, width: "100%", height: 48, borderRadius: 12, border: "none", background: "#f4f4f5", color: "#18181b", fontWeight: 700, fontSize: 15, cursor: authBusy ? "not-allowed" : "pointer", opacity: authBusy ? 0.7 : 1 }}>
+                {authBusy ? "Bitte warten…" : authMode === "login" ? "Anmelden" : authStep === 1 ? "Weiter" : "Konto erstellen"}
+              </button>
+              <div style={{ marginTop: 16, fontSize: 12, color: s.textMuted, textAlign: "center", lineHeight: 1.6 }}>Deine Daten werden geräteübergreifend synchronisiert.</div>
+            </>
           )}
-          {authError && <div style={{ marginTop: 12, fontSize: 13, color: "#fca5a5", background: "rgba(220,38,38,0.1)", borderRadius: 10, padding: "10px 14px" }}>{authError}</div>}
-          <button onClick={handleAuth} disabled={authBusy} style={{ marginTop: 20, width: "100%", height: 48, borderRadius: 12, border: "none", background: "#f4f4f5", color: "#18181b", fontWeight: 700, fontSize: 15, cursor: authBusy ? "not-allowed" : "pointer", opacity: authBusy ? 0.7 : 1 }}>
-            {authBusy ? "Bitte warten…" : authMode === "login" ? "Anmelden" : authStep === 1 ? "Weiter" : "Konto erstellen"}
-          </button>
-          <div style={{ marginTop: 16, fontSize: 12, color: s.textMuted, textAlign: "center", lineHeight: 1.6 }}>Deine Daten werden geräteübergreifend synchronisiert.</div>
         </div>
       </div>
     );
